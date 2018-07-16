@@ -22,7 +22,12 @@ final class RestServer implements AutoCloseable {
 		// Configure resources
 		ResourceConfig rescfg = new ResourceConfig();
 		rescfg.register(new ObjectMapperBinder(config));
-		// rescfg.register(TransmitterResource.class);
+		rescfg.register(NodeResource.class);
+		rescfg.register(RubricResource.class);
+		rescfg.register(SubscriberGroupResource.class);
+		rescfg.register(SubscriberResource.class);
+		rescfg.register(TransmitterResource.class);
+		rescfg.register(UserResource.class);
 
 		// Create HTTP server
 		server = GrizzlyHttpServerFactory.createHttpServer(endpoint, rescfg);
