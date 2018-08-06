@@ -49,6 +49,11 @@ public final class App {
 			parseCommandLine(args);
 
 			restServer = new RestServer(serviceConfig);
+
+//			try (UserClient users = new UserClient(serviceConfig)) {
+//				String res = users.getUser("dh3wr");
+//				System.out.println(res);
+//			}
 		} catch (Exception ex) {
 			LOGGER.fatal("Service startup failed!", ex);
 		}
