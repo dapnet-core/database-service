@@ -9,14 +9,14 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.configuration2.ImmutableConfiguration;
 
-final class UserClient extends RestClient {
+final class TransmitterClient extends RestClient {
 
 	private final WebTarget resourceTarget;
 
-	public UserClient(ImmutableConfiguration config) {
+	public TransmitterClient(ImmutableConfiguration config) {
 		super(config);
 
-		resourceTarget = rootTarget.path("users");
+		resourceTarget = rootTarget.path("transmitters");
 	}
 
 	public JsonObject getAll() throws IOException {
@@ -25,8 +25,8 @@ final class UserClient extends RestClient {
 		return r.readEntity(JsonObject.class);
 	}
 
-	public JsonObject get(String username) throws IOException {
-		Response r = resourceTarget.path(username).request(MediaType.APPLICATION_JSON_TYPE).get();
+	public JsonObject get(String id) throws IOException {
+		Response r = resourceTarget.path(id).request(MediaType.APPLICATION_JSON_TYPE).get();
 		return r.readEntity(JsonObject.class);
 	}
 

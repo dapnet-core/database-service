@@ -24,6 +24,7 @@ public final class App {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final String DEFAULT_CONFIG = "service.properties";
 	private static final String SERVICE_VERSION;
+	private static final ObjectRegistry<RestClient> restClients = new ObjectRegistry<>();
 	private static volatile ImmutableConfiguration serviceConfig;
 	private static volatile RestServer restServer;
 
@@ -48,12 +49,10 @@ public final class App {
 			registerShutdownHook();
 			parseCommandLine(args);
 
-			restServer = new RestServer(serviceConfig);
+			restClients.put(new UserClient(serviceConfig));
+			restClients.put(new TransmitterClient(serviceConfig));
 
-//			try (UserClient users = new UserClient(serviceConfig)) {
-//				String res = users.getUser("dh3wr");
-//				System.out.println(res);
-//			}
+			restServer = new RestServer(serviceConfig, restClients);
 		} catch (Exception ex) {
 			LOGGER.fatal("Service startup failed!", ex);
 		}
@@ -102,6 +101,14 @@ public final class App {
 	}
 
 	private static void stop() {
+		for (RestClient client : restClients) {
+			try {
+				client.close();
+			} catch (Exception ex) {
+				LOGGER.error("Failed to close REST client.", ex);
+			}
+		}
+
 		try {
 			if (restServer != null) {
 				restServer.close();
