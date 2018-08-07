@@ -34,8 +34,11 @@ public final class AuthFilter implements ContainerRequestFilter {
 		}
 
 		final byte[] decodedBytes = Base64.getDecoder().decode(authCreds);
-		final String userAndPassword = new String(decodedBytes, "UTF-8");
+		if (decodedBytes == null || decodedBytes.length == 0) {
+			requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
+		}
 
+		final String userAndPassword = new String(decodedBytes, "UTF-8");
 		final StringTokenizer tok = new StringTokenizer(userAndPassword, ":");
 		final String username = tok.nextToken();
 		final String password = tok.nextToken();

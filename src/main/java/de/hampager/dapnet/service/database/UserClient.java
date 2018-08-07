@@ -4,6 +4,7 @@ import javax.json.JsonObject;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.configuration2.ImmutableConfiguration;
 
@@ -37,6 +38,11 @@ final class UserClient extends RestClient {
 	public JsonObject get(String username) {
 		Response r = resourceTarget.path(username).request(MediaType.APPLICATION_JSON_TYPE).get();
 		return r.readEntity(JsonObject.class);
+	}
+
+	public boolean delete(String username, String revision) {
+		Response r = resourceTarget.path(username).queryParam("rev", revision).request().delete();
+		return r.getStatus() == Status.OK.getStatusCode();
 	}
 
 }

@@ -12,6 +12,26 @@ abstract class AbstractResource {
 	@Context
 	protected HttpHeaders httpHeaders;
 	@Context
-	protected SecurityContext securityContext;
+	private SecurityContext securityContext;
+
+	protected boolean isAuthenticated() {
+		return securityContext.getUserPrincipal() != null;
+	}
+
+	protected String getUsername() {
+		if (securityContext.getUserPrincipal() != null) {
+			return securityContext.getUserPrincipal().getName();
+		} else {
+			return null;
+		}
+	}
+
+	protected boolean isUserInRole(String role) {
+		return securityContext.isUserInRole(role);
+	}
+
+	protected boolean isCurrentUser(String username) {
+		return username.equalsIgnoreCase(getUsername());
+	}
 
 }
