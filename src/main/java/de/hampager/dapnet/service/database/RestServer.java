@@ -15,7 +15,7 @@ final class RestServer implements AutoCloseable {
 
 	private final HttpServer server;
 
-	public RestServer(ImmutableConfiguration config, ObjectRegistry<RestClient> clients) throws Exception {
+	public RestServer(ImmutableConfiguration config, ObjectRegistry<AbstractClient> clients) throws Exception {
 		// Read config values
 		final String hostname = config.getString("rest.hostname", "localhost");
 		final String path = config.getString("rest.path", "/");

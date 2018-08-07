@@ -3,20 +3,13 @@ package de.hampager.dapnet.service.database;
 import java.io.IOException;
 
 import javax.json.JsonObject;
-import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.apache.commons.configuration2.ImmutableConfiguration;
+final class TransmitterClient extends AbstractClient {
 
-final class TransmitterClient extends RestClient {
-
-	private final WebTarget resourceTarget;
-
-	public TransmitterClient(ImmutableConfiguration config) {
-		super(config);
-
-		resourceTarget = rootTarget.path("transmitters");
+	public TransmitterClient(RestClient client) {
+		super(client, "transmitters");
 	}
 
 	public JsonObject getAll() throws IOException {

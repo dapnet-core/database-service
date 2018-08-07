@@ -6,9 +6,9 @@ import org.glassfish.hk2.utilities.binding.AbstractBinder;
 
 public final class DatabaseBinder extends AbstractBinder {
 
-	private final ObjectRegistry<RestClient> clients;
+	private final ObjectRegistry<AbstractClient> clients;
 
-	public DatabaseBinder(ObjectRegistry<RestClient> clients) {
+	public DatabaseBinder(ObjectRegistry<AbstractClient> clients) {
 		this.clients = Objects.requireNonNull(clients);
 	}
 

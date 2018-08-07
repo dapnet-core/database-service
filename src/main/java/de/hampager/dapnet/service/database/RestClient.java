@@ -10,11 +10,11 @@ import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.glassfish.jersey.jsonp.JsonProcessingFeature;
 
-abstract class RestClient implements AutoCloseable {
+final class RestClient implements AutoCloseable {
 
 	private final Object lockObj = new Object();
 	private final Client client;
-	protected WebTarget rootTarget;
+	private final WebTarget rootTarget;
 
 	public RestClient(ImmutableConfiguration config) {
 		final String server = config.getString("db.server", "couchdb");
@@ -35,6 +35,12 @@ abstract class RestClient implements AutoCloseable {
 
 		final String endpoint = String.format("http://%s:%d/", server, port);
 		rootTarget = client.target(endpoint);
+	}
+
+	public WebTarget createTarget(String path) {
+		synchronized (lockObj) {
+			return rootTarget.path(path);
+		}
 	}
 
 	@Override

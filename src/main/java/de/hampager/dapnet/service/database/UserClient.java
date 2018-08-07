@@ -1,21 +1,14 @@
 package de.hampager.dapnet.service.database;
 
 import javax.json.JsonObject;
-import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.apache.commons.configuration2.ImmutableConfiguration;
+final class UserClient extends AbstractClient {
 
-final class UserClient extends RestClient {
-
-	private final WebTarget resourceTarget;
-
-	public UserClient(ImmutableConfiguration config) {
-		super(config);
-
-		resourceTarget = rootTarget.path("users");
+	public UserClient(RestClient client) {
+		super(client, "users");
 	}
 
 	public JsonObject getAll(boolean fullData) {
