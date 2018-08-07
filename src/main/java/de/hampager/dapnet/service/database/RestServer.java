@@ -26,7 +26,7 @@ final class RestServer implements AutoCloseable {
 		URI endpoint = new URI("http", null, hostname, port, path, null, null);
 		// Configure resources
 		ResourceConfig rescfg = new ResourceConfig();
-		rescfg.register(AuthFilter.class);
+		rescfg.register(BasicAuthFilter.class);
 		rescfg.register(JsonProcessingFeature.class);
 		rescfg.register(RolesAllowedDynamicFeature.class);
 		rescfg.register(new DatabaseBinder(clients));

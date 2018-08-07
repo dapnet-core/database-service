@@ -3,10 +3,14 @@ package de.hampager.dapnet.service.database;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 import javax.annotation.Priority;
 import javax.inject.Inject;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -21,7 +25,7 @@ import javax.ws.rs.ext.Provider;
 @Provider
 @Priority(Priorities.AUTHENTICATION)
 @PreMatching
-public final class AuthFilter implements ContainerRequestFilter {
+public final class BasicAuthFilter implements ContainerRequestFilter {
 
 	@Inject
 	private UserClient users;
@@ -63,11 +67,11 @@ public final class AuthFilter implements ContainerRequestFilter {
 	private static final class UserPrincipal implements Principal {
 
 		private final String username;
-		private final String role;
+		private final Set<String> roles;
 
-		public UserPrincipal(String username, String role) {
+		public UserPrincipal(String username, Set<String> roles) {
 			this.username = username;
-			this.role = role;
+			this.roles = Collections.unmodifiableSet(roles);
 		}
 
 		@Override
@@ -75,8 +79,8 @@ public final class AuthFilter implements ContainerRequestFilter {
 			return username;
 		}
 
-		public String getRole() {
-			return role;
+		public Set<String> getRoles() {
+			return roles;
 		}
 
 	}
@@ -90,8 +94,13 @@ public final class AuthFilter implements ContainerRequestFilter {
 			this.secure = secure;
 
 			final String username = user.getString("_id");
-			final String role = user.getString("role", "user");
-			this.principal = new UserPrincipal(username, role);
+			final Set<String> roles = new HashSet<>();
+			JsonArray roleArray = user.getJsonArray("roles");
+			if (roleArray != null) {
+				roleArray.forEach(r -> roles.add(r.toString()));
+			}
+
+			this.principal = new UserPrincipal(username, roles);
 		}
 
 		@Override
@@ -101,7 +110,7 @@ public final class AuthFilter implements ContainerRequestFilter {
 
 		@Override
 		public boolean isUserInRole(String role) {
-			return principal.getRole().equalsIgnoreCase(role);
+			return principal.getRoles().contains(role);
 		}
 
 		@Override
