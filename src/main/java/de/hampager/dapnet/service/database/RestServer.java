@@ -1,6 +1,5 @@
 package de.hampager.dapnet.service.database;
 
-import java.lang.System;
 import java.net.URI;
 
 import javax.json.stream.JsonGenerator;
@@ -24,13 +23,7 @@ final class RestServer implements AutoCloseable {
 		final boolean prettyPrint = config.getBoolean("rest.pretty_print", false);
 
 		// Configure endpoint
-		URI endpoint;
-		if (System.getenv("NODE_NAME") != null) {
-			// Always listen on 0.0.0.0:80 in a docker container
-			endpoint = new URI("http", null, "0.0.0.0", 80, path, null, null);
-		} else {
-			endpoint = new URI("http", null, hostname, port, path, null, null);
-		}
+		URI endpoint = new URI("http", null, hostname, port, path, null, null);
 		// Configure resources
 		ResourceConfig rescfg = new ResourceConfig();
 		rescfg.register(AuthFilter.class);

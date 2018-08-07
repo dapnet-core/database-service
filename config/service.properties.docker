@@ -1,0 +1,8 @@
+# DAPNET Database Service properties
+rest.hostname = 0.0.0.0
+rest.path = /
+rest.port = 80
+rest.pretty_print = true
+
+db.server = couchdb
+db.port = 5984
