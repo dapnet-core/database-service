@@ -1,5 +1,7 @@
 package de.hampager.dapnet.service.database;
 
+import java.lang.System;
+
 import javax.json.stream.JsonGenerator;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -19,8 +21,8 @@ abstract class RestClient implements AutoCloseable {
 	public RestClient(ImmutableConfiguration config) {
 		final String server = config.getString("db.server", "couchdb");
 		final int port = config.getInt("db.port", 5984);
-		final String user = config.getString("db.user", null);
-		final String password = config.getString("db.password", null);
+		final String user = config.getString("db.user", System.getenv("COUCHDB_USER"));
+		final String password = config.getString("db.password", System.getenv("COUCHDB_PASSWORD"));
 		final boolean prettyPrint = config.getBoolean("rest.pretty_print", false);
 
 		ClientConfig cc = new ClientConfig();
