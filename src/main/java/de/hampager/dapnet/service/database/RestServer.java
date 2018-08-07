@@ -17,9 +17,9 @@ final class RestServer implements AutoCloseable {
 
 	public RestServer(ImmutableConfiguration config, ObjectRegistry<RestClient> clients) throws Exception {
 		// Read config values
-		final String hostname = config.getString("rest.hostname", "localhost");
+		final String hostname = config.getString("rest.hostname", "0.0.0.0");
 		final String path = config.getString("rest.path", "/");
-		final int port = config.getInt("rest.port", 8080);
+		final int port = config.getInt("rest.port", 80);
 		final boolean prettyPrint = config.getBoolean("rest.pretty_print", false);
 
 		// Configure endpoint
