@@ -1,7 +1,5 @@
 package de.hampager.dapnet.service.database;
 
-import java.io.IOException;
-
 import javax.json.JsonObject;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
@@ -19,13 +17,24 @@ final class UserClient extends RestClient {
 		resourceTarget = rootTarget.path("users");
 	}
 
-	public JsonObject getAll() throws IOException {
-		Response r = resourceTarget.path("_all_docs").queryParam("include_docs", "true")
+	public JsonObject getAll(boolean fullData) {
+		Response r = resourceTarget.path("_all_docs").queryParam("include_docs", String.valueOf(fullData))
 				.request(MediaType.APPLICATION_JSON_TYPE).get();
 		return r.readEntity(JsonObject.class);
 	}
 
-	public JsonObject get(String username) throws IOException {
+	public JsonObject get(String startKey, String endKey, boolean fullData) {
+		Response r = resourceTarget.path("_all_docs").queryParam("startKey", startKey).queryParam("endKey", endKey)
+				.queryParam("include_docs", String.valueOf(fullData)).request(MediaType.APPLICATION_JSON_TYPE).get();
+		return r.readEntity(JsonObject.class);
+	}
+
+	public JsonObject get(int limit, int skip) {
+		// TODO Implementation
+		throw new UnsupportedOperationException();
+	}
+
+	public JsonObject get(String username) {
 		Response r = resourceTarget.path(username).request(MediaType.APPLICATION_JSON_TYPE).get();
 		return r.readEntity(JsonObject.class);
 	}

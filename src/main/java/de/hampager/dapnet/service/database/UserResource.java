@@ -1,5 +1,7 @@
 package de.hampager.dapnet.service.database;
 
+import javax.annotation.security.PermitAll;
+import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.json.JsonObject;
@@ -16,33 +18,49 @@ import javax.ws.rs.core.Response.Status;
 @Path("users")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@PermitAll
 public class UserResource extends AbstractResource {
 
 	@Inject
 	private UserClient client;
 
 	@GET
+	@RolesAllowed({ UserRoles.ADMIN, UserRoles.SUPPORT })
 	public Response getAll() {
-		try {
-			JsonObject obj = client.getAll();
-			return Response.ok(obj).build();
-		} catch (Exception ex) {
-			return Response.serverError().status(Status.INTERNAL_SERVER_ERROR).entity(ex.getMessage()).build();
-		}
+		JsonObject obj = client.getAll(true);
+		return Response.ok(obj).build();
+	}
+
+//	@GET
+//	@RolesAllowed({ UserRoles.ADMIN, UserRoles.SUPPORT })
+//	public Response getRangeByNames(@QueryParam("startkey") String startKey, @QueryParam("endkey") String endKey) {
+//		JsonObject obj = client.get(startKey, endKey, true);
+//		return Response.ok(obj).build();
+//	}
+
+	@GET
+	@Path("_usernames")
+	public Response getAllNames() {
+		JsonObject obj = client.getAll(false);
+		return Response.ok(obj).build();
 	}
 
 	@GET
 	@Path("{username}")
 	public Response get(@PathParam("username") String username) {
-		try {
-			JsonObject obj = client.get(username);
-			if (obj != null) {
-				return Response.ok(obj).build();
-			} else {
-				return Response.status(Status.NOT_FOUND).build();
-			}
-		} catch (Exception ex) {
-			return Response.serverError().status(Status.INTERNAL_SERVER_ERROR).entity(ex.getMessage()).build();
+		if (securityContext.getUserPrincipal() == null) {
+			return Response.status(Status.FORBIDDEN).build();
+		} else if (!username.equalsIgnoreCase(securityContext.getUserPrincipal().getName())
+				&& !(securityContext.isUserInRole(UserRoles.ADMIN)
+						|| securityContext.isUserInRole(UserRoles.SUPPORT))) {
+			return Response.status(Status.FORBIDDEN).build();
+		}
+
+		JsonObject obj = client.get(username);
+		if (obj != null) {
+			return Response.ok(obj).build();
+		} else {
+			return Response.status(Status.NOT_FOUND).build();
 		}
 	}
 
