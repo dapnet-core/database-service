@@ -17,6 +17,8 @@ abstract class AbstractController {
 
 	@Autowired
 	protected ObjectMapper mapper;
+	@Autowired
+	private AuthService auth;
 
 	protected final RestTemplate restTemplate;
 	private final String basePath;
@@ -45,15 +47,34 @@ abstract class AbstractController {
 		ObjectNode n = mapper.createObjectNode();
 		switch (ex.getStatusCode()) {
 		case NOT_FOUND:
-			n.put("error", "Object not found.");
+			n.put("error", "Object or endpoint not found.");
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(n);
 		case FORBIDDEN:
-			n.put("errror", "Unauthorized or access forbidden.");
+			n.put("error", "Unauthorized or access forbidden.");
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(n);
 		default:
 			n.put("error", ex.getMessage());
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(n);
 		}
+	}
+
+	protected void ensureAuthenticated(AuthPermission permission) {
+		ensureAuthenticated(permission, null);
+	}
+
+	protected void ensureAuthenticated(AuthPermission permission, String param) {
+		AuthResponse response = authenticate(permission, param);
+		if (!response.isAllowed()) {
+			throw new HttpClientErrorException(HttpStatus.FORBIDDEN);
+		}
+	}
+
+	protected AuthResponse authenticate(AuthPermission permission) {
+		return authenticate(permission, null);
+	}
+
+	protected AuthResponse authenticate(AuthPermission permission, String param) {
+		return auth.authenticate(new AuthRequest("user", "demo", permission, param));
 	}
 
 }
