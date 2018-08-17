@@ -12,4 +12,4 @@ COPY --from=build /build/target/lib /app/lib
 
 WORKDIR /app
 EXPOSE 80
-CMD sh -c "java -Dlog4j.configurationFile=LogSettings.xml -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager -jar *.jar --env"
+CMD sh -c "java -jar *.jar"

@@ -11,30 +11,30 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class App {
 
-    private static final String SERVICE_VERSION;
+	private static final String SERVICE_VERSION;
 
-    static {
-        // Read service version from package
-        String ver = App.class.getPackage().getImplementationVersion();
-        SERVICE_VERSION = ver != null ? ver : "UNKNOWN";
-    }
+	static {
+		// Read service version from package
+		String ver = App.class.getPackage().getImplementationVersion();
+		SERVICE_VERSION = ver != null ? ver : "UNKNOWN";
+	}
 
-    /**
-     * The application entry point.
-     *
-     * @param args Command line arguments
-     */
-    public static void main(String[] args) {
-        SpringApplication.run(App.class, args);
-    }
+	/**
+	 * The application entry point.
+	 *
+	 * @param args Command line arguments
+	 */
+	public static void main(String[] args) {
+		SpringApplication.run(App.class, args);
+	}
 
-    /**
-     * Gets the service version.
-     *
-     * @return Service version string.
-     */
-    public static String getVersion() {
-        return SERVICE_VERSION;
-    }
+	/**
+	 * Gets the service version.
+	 *
+	 * @return Service version string.
+	 */
+	public static String getVersion() {
+		return SERVICE_VERSION;
+	}
 
 }
