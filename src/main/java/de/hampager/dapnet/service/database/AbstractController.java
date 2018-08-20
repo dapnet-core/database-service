@@ -1,12 +1,19 @@
 package de.hampager.dapnet.service.database;
 
+import java.util.Base64;
+
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.context.request.WebRequest;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -64,7 +71,7 @@ abstract class AbstractController {
 
 	protected void ensureAuthenticated(AuthPermission permission, String param) {
 		AuthResponse response = authenticate(permission, param);
-		if (!response.isAllowed()) {
+		if (response == null || !response.isAllowed()) {
 			throw new HttpClientErrorException(HttpStatus.FORBIDDEN);
 		}
 	}
@@ -74,7 +81,31 @@ abstract class AbstractController {
 	}
 
 	protected AuthResponse authenticate(AuthPermission permission, String param) {
-		return auth.authenticate(new AuthRequest("user", "demo", permission, param));
+		try {
+			final HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder
+					.currentRequestAttributes()).getRequest();
+			String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+			if (authHeader == null || authHeader.isEmpty() || !authHeader.startsWith("Basic")) {
+				return null;
+			}
+
+			authHeader = authHeader.substring("Basic".length()).trim();
+
+			final byte[] decodedBytes = Base64.getDecoder().decode(authHeader);
+			if (decodedBytes == null || decodedBytes.length == 0) {
+				return null;
+			}
+
+			final String userAndPassword = new String(decodedBytes, "UTF-8");
+			final String[] creds = userAndPassword.split(":", 2);
+			if (creds[0] != null && creds[1] == null) {
+				return auth.authenticate(new AuthRequest(creds[0], creds[1], permission, param));
+			} else {
+				return null;
+			}
+		} catch (Exception ex) {
+			return null;
+		}
 	}
 
 }
