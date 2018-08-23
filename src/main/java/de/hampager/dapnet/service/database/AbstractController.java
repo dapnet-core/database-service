@@ -1,19 +1,14 @@
 package de.hampager.dapnet.service.database;
 
-import java.util.Base64;
-
-import javax.servlet.http.HttpServletRequest;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.context.request.WebRequest;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -65,47 +60,25 @@ abstract class AbstractController {
 		}
 	}
 
-	protected void ensureAuthenticated(AuthPermission permission) {
-		ensureAuthenticated(permission, null);
+	protected void ensureAuthenticated(Authentication authentication, AuthPermission permission) {
+		ensureAuthenticated(authentication, permission, null);
 	}
 
-	protected void ensureAuthenticated(AuthPermission permission, String param) {
-		AuthResponse response = authenticate(permission, param);
+	protected void ensureAuthenticated(Authentication authentication, AuthPermission permission, String param) {
+		AuthResponse response = authenticate(authentication, permission, param);
 		if (response == null || !response.isAllowed()) {
 			throw new HttpClientErrorException(HttpStatus.FORBIDDEN);
 		}
 	}
 
-	protected AuthResponse authenticate(AuthPermission permission) {
-		return authenticate(permission, null);
+	protected AuthResponse authenticate(Authentication authentication, AuthPermission permission) {
+		return authenticate(authentication, permission, null);
 	}
 
-	protected AuthResponse authenticate(AuthPermission permission, String param) {
-		try {
-			final HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder
-					.currentRequestAttributes()).getRequest();
-			String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-			if (authHeader == null || authHeader.isEmpty() || !authHeader.startsWith("Basic")) {
-				return null;
-			}
-
-			authHeader = authHeader.substring("Basic".length()).trim();
-
-			final byte[] decodedBytes = Base64.getDecoder().decode(authHeader);
-			if (decodedBytes == null || decodedBytes.length == 0) {
-				return null;
-			}
-
-			final String userAndPassword = new String(decodedBytes, "UTF-8");
-			final String[] creds = userAndPassword.split(":", 2);
-			if (creds[0] != null && creds[1] == null) {
-				return auth.authenticate(new AuthRequest(creds[0], creds[1], permission, param));
-			} else {
-				return null;
-			}
-		} catch (Exception ex) {
-			return null;
-		}
+	protected AuthResponse authenticate(Authentication authentication, AuthPermission permission, String param) {
+		UserDetails user = (UserDetails) authentication.getPrincipal();
+		AuthRequest authreq = new AuthRequest(user.getUsername(), user.getPassword(), permission, param);
+		return auth.authenticate(authreq);
 	}
 
 }

@@ -1,6 +1,8 @@
 package de.hampager.dapnet.service.database;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -11,7 +13,12 @@ class AuthService {
 	@Value("${auth.service}")
 	private String authServiceUrl;
 
+	@Autowired
+	private BCryptPasswordEncoder passwordEncoder;
+
 	public AuthResponse authenticate(AuthRequest request) {
+		request.setPassword(passwordEncoder.encode(request.getPassword()));
+
 		return restTemplate.getForObject(buildPath(request), AuthResponse.class);
 	}
 
