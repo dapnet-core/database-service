@@ -15,6 +15,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+/**
+ * Base class for REST controllers.
+ * 
+ * @author Philipp Thiel
+ */
 abstract class AbstractController {
 
 	@Autowired
@@ -23,9 +28,11 @@ abstract class AbstractController {
 	private AuthService auth;
 
 	protected final RestTemplate restTemplate;
-	private final String basePath;
+	protected final String basePath;
+	protected final String allDocsPath;
+	protected final String queryPath;
 
-	protected AbstractController(DbConfig config, RestTemplateBuilder builder, String basePath) {
+	protected AbstractController(DbConfig config, RestTemplateBuilder builder, String path) {
 		if (config.getUser() == null || config.getUser().isEmpty() || config.getPassword() == null
 				|| config.getPassword().isEmpty()) {
 			restTemplate = builder.build();
@@ -33,15 +40,9 @@ abstract class AbstractController {
 			restTemplate = builder.basicAuthorization(config.getUser(), config.getPassword()).build();
 		}
 
-		this.basePath = String.format("%s/%s/", config.getHost(), basePath);
-	}
-
-	protected String getBasePath() {
-		return basePath;
-	}
-
-	protected String getPath(String path) {
-		return basePath + path;
+		basePath = String.format("%s/%s/", config.getHost(), path);
+		allDocsPath = basePath.concat("_all_docs?include_docs=true");
+		queryPath = basePath.concat("{query}");
 	}
 
 	@ExceptionHandler(HttpClientErrorException.class)
@@ -51,8 +52,11 @@ abstract class AbstractController {
 		case NOT_FOUND:
 			n.put("error", "Object or endpoint not found.");
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(n);
+		case UNAUTHORIZED:
+			n.put("error", "Unauthorized");
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(n);
 		case FORBIDDEN:
-			n.put("error", "Unauthorized or access forbidden.");
+			n.put("error", "Access forbidden.");
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(n);
 		default:
 			n.put("error", ex.getMessage());
@@ -60,22 +64,24 @@ abstract class AbstractController {
 		}
 	}
 
-	protected void ensureAuthenticated(Authentication authentication, AuthPermission permission) {
+	protected void ensureAuthenticated(Authentication authentication, String permission) {
 		ensureAuthenticated(authentication, permission, null);
 	}
 
-	protected void ensureAuthenticated(Authentication authentication, AuthPermission permission, String param) {
+	protected void ensureAuthenticated(Authentication authentication, String permission, String param) {
 		AuthResponse response = authenticate(authentication, permission, param);
-		if (response == null || !response.isAllowed()) {
+		if (response == null || !response.isAuthenticated()) {
+			throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED);
+		} else if (!response.isAllowed()) {
 			throw new HttpClientErrorException(HttpStatus.FORBIDDEN);
 		}
 	}
 
-	protected AuthResponse authenticate(Authentication authentication, AuthPermission permission) {
+	protected AuthResponse authenticate(Authentication authentication, String permission) {
 		return authenticate(authentication, permission, null);
 	}
 
-	protected AuthResponse authenticate(Authentication authentication, AuthPermission permission, String param) {
+	protected AuthResponse authenticate(Authentication authentication, String permission, String param) {
 		UserDetails user = (UserDetails) authentication.getPrincipal();
 		AuthRequest authreq = new AuthRequest(user.getUsername(), user.getPassword(), permission, param);
 		return auth.authenticate(authreq);

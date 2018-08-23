@@ -1,34 +1,32 @@
 package de.hampager.dapnet.service.database;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+/**
+ * This class implements the authentication service.
+ * 
+ * @author Philipp Thiel
+ */
 @Service
 class AuthService {
 
 	private final RestTemplate restTemplate = new RestTemplate();
-	@Value("${auth.service}")
-	private String authServiceUrl;
+	private final String url;
 
-	@Autowired
-	private BCryptPasswordEncoder passwordEncoder;
-
-	public AuthResponse authenticate(AuthRequest request) {
-		request.setPassword(passwordEncoder.encode(request.getPassword()));
-
-		return restTemplate.getForObject(buildPath(request), AuthResponse.class);
+	public AuthService(@Value("${auth.service}") String serviceUrl) {
+		this.url = serviceUrl + "/auth/users/permission/{path}/{param}";
 	}
 
-	private String buildPath(AuthRequest request) {
-		String path = authServiceUrl + "/" + request.getPermission().getPath();
-		if (request.getParam() != null) {
-			path = path + "/" + request.getParam();
-		}
-
-		return path;
+	/**
+	 * Performs an authentication attempt against the DAPNET auth service.
+	 * 
+	 * @param request Authentication request
+	 * @return Authentication response
+	 */
+	public AuthResponse authenticate(AuthRequest request) {
+		return restTemplate.postForObject(url, request, AuthResponse.class, request.getPath(), request.getParam());
 	}
 
 }

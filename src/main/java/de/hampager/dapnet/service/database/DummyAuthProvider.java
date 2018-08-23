@@ -12,6 +12,12 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+/**
+ * This class implements a dummy authentication provider that accepts all
+ * authentication requests and stores the credentials for later use.
+ * 
+ * @author Philipp Thiel
+ */
 @Component
 class DummyAuthProvider implements AuthenticationProvider {
 
