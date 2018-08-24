@@ -95,6 +95,14 @@ abstract class AbstractController {
 		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(basePath);
 		builder.path("_all_docs").queryParam("include_docs", "true").queryParam("limit", "20");
 
+		if (requestParams.containsKey("startswith")) {
+			String value = requestParams.remove("startswith");
+			if (value != null) {
+				requestParams.put("startkey", value);
+				requestParams.put("endkey", String.format("\"%s\\ufff0\"", value.replaceAll("\"", "")));
+			}
+		}
+
 		requestParams.forEach((p, v) -> {
 			if (VALID_PARAMS.contains(p)) {
 				builder.replaceQueryParam(p, v);
