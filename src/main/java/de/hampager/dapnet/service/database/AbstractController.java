@@ -35,7 +35,7 @@ abstract class AbstractController {
 	private static final Set<String> VALID_PARAMS = Set.of("limit", "skip", "startkey", "endkey");
 	protected final RestTemplate restTemplate;
 	protected final String basePath;
-	protected final String queryPath;
+	protected final String paramPath;
 
 	protected AbstractController(DbConfig config, RestTemplateBuilder builder, String path) {
 		if (config.getUser() == null || config.getUser().isEmpty() || config.getPassword() == null
@@ -46,7 +46,7 @@ abstract class AbstractController {
 		}
 
 		basePath = String.format("%s/%s/", config.getHost(), path);
-		queryPath = basePath.concat("{query}");
+		paramPath = basePath.concat("{param}");
 	}
 
 	@ExceptionHandler(HttpClientErrorException.class)
