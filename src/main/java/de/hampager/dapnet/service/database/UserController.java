@@ -1,5 +1,8 @@
 package de.hampager.dapnet.service.database;
 
+import java.net.URI;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.ResponseEntity;
@@ -40,10 +43,11 @@ class UserController extends AbstractController {
 	}
 
 	@GetMapping
-	public ResponseEntity<JsonNode> getAll(Authentication authentication) {
+	public ResponseEntity<JsonNode> getAll(Authentication authentication, @RequestParam Map<String, String> params) {
 		ensureAuthenticated(authentication, USER_READ);
 
-		JsonNode in = restTemplate.getForObject(allDocsPath, JsonNode.class);
+		URI path = buildAllDocsPath(params);
+		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
 		ObjectNode out = mapper.createObjectNode();
 
 		out.put("total_rows", in.get("total_rows").asInt());
@@ -78,6 +82,8 @@ class UserController extends AbstractController {
 	public void deleteUser(Authentication authentication, @PathVariable String username, @RequestParam String rev) {
 		ensureAuthenticated(authentication, USER_DELETE, username);
 
+		// Return CouchDB JSON response
+		// delete() is void, doesn't return a value
 		// restTemplate.delete(queryPath, username);
 	}
 

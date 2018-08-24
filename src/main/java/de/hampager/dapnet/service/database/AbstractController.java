@@ -1,5 +1,9 @@
 package de.hampager.dapnet.service.database;
 
+import java.net.URI;
+import java.util.Map;
+import java.util.Set;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpStatus;
@@ -10,6 +14,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,9 +32,9 @@ abstract class AbstractController {
 	@Autowired
 	private AuthService auth;
 
+	private static final Set<String> VALID_PARAMS = Set.of("limit", "skip", "startkey", "endkey", "startswith");
 	protected final RestTemplate restTemplate;
 	protected final String basePath;
-	protected final String allDocsPath;
 	protected final String queryPath;
 
 	protected AbstractController(DbConfig config, RestTemplateBuilder builder, String path) {
@@ -41,7 +46,6 @@ abstract class AbstractController {
 		}
 
 		basePath = String.format("%s/%s/", config.getHost(), path);
-		allDocsPath = basePath.concat("_all_docs?include_docs=true");
 		queryPath = basePath.concat("{query}");
 	}
 
@@ -85,6 +89,19 @@ abstract class AbstractController {
 		UserDetails user = (UserDetails) authentication.getPrincipal();
 		AuthRequest authreq = new AuthRequest(user.getUsername(), user.getPassword(), permission, param);
 		return auth.authenticate(authreq);
+	}
+
+	protected URI buildAllDocsPath(Map<String, String> requestParams) {
+		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(basePath);
+		builder.path("_all_docs").queryParam("include_docs", "true").queryParam("limit", "20");
+
+		requestParams.forEach((p, v) -> {
+			if (VALID_PARAMS.contains(p)) {
+				builder.replaceQueryParam(p, v);
+			}
+		});
+
+		return builder.build().toUri();
 	}
 
 }
