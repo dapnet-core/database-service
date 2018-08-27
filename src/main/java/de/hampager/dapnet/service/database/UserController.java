@@ -4,7 +4,6 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -43,6 +42,8 @@ class UserController extends AbstractController {
 
 	private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 	private static final Set<String> VALID_UPDATE_KEYS = Set.of("email", "enabled", "password", "roles");
+	private static final String[] CREATE_REQUIRED_KEYS = { "_id", "password", "email", "roles", "enabled",
+			"email_valid" };
 	private static final String USER_LIST = "user.list";
 	private static final String USER_READ = "user.read";
 	private static final String USER_UPDATE = "user.update";
@@ -106,6 +107,12 @@ class UserController extends AbstractController {
 	private ResponseEntity<JsonNode> createUser(Authentication auth, JsonNode user) {
 		ensureAuthenticated(auth, USER_CREATE);
 
+		try {
+			validateRequiredFileds(user);
+		} catch (MissingFieldException ex) {
+			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST, ex.getMessage());
+		}
+
 		ObjectNode modUser;
 		try {
 			modUser = (ObjectNode) user;
@@ -114,8 +121,11 @@ class UserController extends AbstractController {
 			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST);
 		}
 
-		modUser.put("created_on", Instant.now().toString());
+		final String ts = Instant.now().toString();
+		modUser.put("created_on", ts);
 		modUser.put("created_by", auth.getName());
+		modUser.put("changed_on", ts);
+		modUser.put("changed_by", auth.getName());
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -144,6 +154,9 @@ class UserController extends AbstractController {
 			}
 		});
 
+		modUser.put("changed_on", Instant.now().toString());
+		modUser.put("changed_by", auth.getName());
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
@@ -152,12 +165,20 @@ class UserController extends AbstractController {
 	}
 
 	@DeleteMapping("{username}")
-	public void deleteUser(Authentication authentication, @PathVariable String username, @RequestParam String rev) {
+	public ResponseEntity<String> deleteUser(Authentication authentication, @PathVariable String username,
+			@RequestParam String rev) {
 		ensureAuthenticated(authentication, USER_DELETE, username);
 
-		// Return CouchDB JSON response
-		// delete() is void, doesn't return a value
-		// restTemplate.delete(queryPath, username);
+		// TODO Delete referenced objects
+		return restTemplate.exchange(paramPath, HttpMethod.DELETE, null, String.class, username);
+	}
+
+	private static void validateRequiredFileds(JsonNode json) throws MissingFieldException {
+		for (String field : CREATE_REQUIRED_KEYS) {
+			if (!json.hasNonNull(field)) {
+				throw new MissingFieldException("Field '" + field + "' is missing.");
+			}
+		}
 	}
 
 }
