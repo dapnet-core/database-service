@@ -46,15 +46,15 @@ class NodeController extends AbstractController {
 	private static final String NODE_CREATE = "node.create";
 	private static final String NODE_DELETE = "node.delete";
 	private static final String NODE_CHANGE_ROLE = "node.change_role";
-	private final String nodenamesPath;
-	private final String nodenamesDescriptionPath;
+	private final String namePath;
+	private final String descriptionPath;
 
 	@Autowired
 	public NodeController(DbConfig config, RestTemplateBuilder builder) {
 		super(config, builder, "nodes");
 
-		this.nodenamesPath = basePath.concat("_design/nodes/_list/nodenames/_all_docs");
-		this.nodenamesDescriptionPath = basePath.concat("_design/nodes/_list/nodenamesdescription/_all_docs");
+		this.namePath = basePath.concat("_design/nodes/_list/names/byId");
+		this.descriptionPath = basePath.concat("_design/nodes/_list/descriptions/descriptions");
 	}
 
 	@GetMapping
@@ -81,19 +81,19 @@ class NodeController extends AbstractController {
 		return ResponseEntity.ok(out);
 	}
 
-	@GetMapping("_nodenames")
+	@GetMapping("_names")
 	public ResponseEntity<JsonNode> getNodenames(Authentication authentication) {
 		ensureAuthenticated(authentication, NODE_LIST);
 
-		JsonNode in = restTemplate.getForObject(nodenamesPath, JsonNode.class);
+		JsonNode in = restTemplate.getForObject(namePath, JsonNode.class);
 		return ResponseEntity.ok(in);
 	}
 
-	@GetMapping("_nodenamesdescription")
+	@GetMapping("_descriptions")
 	public ResponseEntity<JsonNode> getNodenamesDescription(Authentication authentication) {
 		ensureAuthenticated(authentication, NODE_LIST);
 
-		JsonNode in = restTemplate.getForObject(nodenamesDescriptionPath, JsonNode.class);
+		JsonNode in = restTemplate.getForObject(descriptionPath, JsonNode.class);
 		return ResponseEntity.ok(in);
 	}
 
