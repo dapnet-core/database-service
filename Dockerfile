@@ -6,7 +6,6 @@ RUN mvn package -q
 
 FROM openjdk:10-slim
 COPY --from=build /build/target/*.jar /app/
-COPY --from=build /build/target/lib /app/lib
 
 WORKDIR /app
 EXPOSE 80

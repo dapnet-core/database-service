@@ -91,9 +91,10 @@ abstract class AbstractController {
 		return auth.authenticate(authreq);
 	}
 
-	protected URI buildAllDocsPath(Map<String, String> requestParams) {
+	protected URI buildViewPath(String designDoc, String viewName, Map<String, String> requestParams) {
 		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(basePath);
-		builder.path("_all_docs").queryParam("include_docs", "true").queryParam("limit", "20");
+		builder.path("_design/" + designDoc + "/_view/" + viewName);
+		builder.queryParam("include_docs", "true").queryParam("limit", "20");
 
 		if (requestParams.containsKey("startswith")) {
 			String value = requestParams.remove("startswith");

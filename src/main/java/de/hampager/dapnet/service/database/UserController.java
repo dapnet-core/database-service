@@ -63,7 +63,7 @@ class UserController extends AbstractController {
 	public ResponseEntity<JsonNode> getAll(Authentication authentication, @RequestParam Map<String, String> params) {
 		ensureAuthenticated(authentication, USER_READ);
 
-		URI path = buildAllDocsPath(params);
+		URI path = buildViewPath("users", "byId", params);
 		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
 		ObjectNode out = mapper.createObjectNode();
 
