@@ -24,6 +24,7 @@ class AppSecurityConfig extends WebSecurityConfigurerAdapter {
 		http.csrf().disable();
 		http.authorizeRequests().anyRequest().authenticated();
 		http.httpBasic();
+		http.headers().cacheControl();
 	}
 
 	@Override
