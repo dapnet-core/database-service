@@ -41,8 +41,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 class UserController extends AbstractController {
 
 	private static final Logger logger = LoggerFactory.getLogger(UserController.class);
-	private static final Set<String> VALID_UPDATE_KEYS = Set.of("email", "enabled", "password", "roles");
-	private static final String[] CREATE_REQUIRED_KEYS = { "_id", "password", "email", "roles", "enabled",
+	private static final Set<String> VALID_KEYS_UPDATE = Set.of("email", "enabled", "password", "roles");
+	private static final String[] REQUIRED_KEYS_CREATE = { "_id", "password", "email", "roles", "enabled",
 			"email_valid" };
 	private static final String USER_LIST = "user.list";
 	private static final String USER_READ = "user.read";
@@ -63,7 +63,7 @@ class UserController extends AbstractController {
 	public ResponseEntity<JsonNode> getAll(Authentication authentication, @RequestParam Map<String, String> params) {
 		ensureAuthenticated(authentication, USER_READ);
 
-		URI path = buildViewPath("users", "byId", params);
+		URI path = buildViewPath("byId", params);
 		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
 		ObjectNode out = mapper.createObjectNode();
 
@@ -108,7 +108,7 @@ class UserController extends AbstractController {
 		ensureAuthenticated(auth, USER_CREATE);
 
 		try {
-			validateRequiredFileds(user);
+			JsonUtils.validateRequiredFields(user, REQUIRED_KEYS_CREATE);
 		} catch (MissingFieldException ex) {
 			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST, ex.getMessage());
 		}
@@ -137,6 +137,10 @@ class UserController extends AbstractController {
 	private ResponseEntity<JsonNode> updateUser(Authentication auth, JsonNode userUpdate) {
 		ensureAuthenticated(auth, USER_UPDATE, auth.getName());
 
+		if (userUpdate.has("roles")) {
+			ensureAuthenticated(auth, USER_CHANGE_ROLE, auth.getName());
+		}
+
 		final String userId = userUpdate.get("_id").asText();
 
 		JsonNode oldUser = restTemplate.getForObject(paramPath, JsonNode.class, userId);
@@ -149,7 +153,7 @@ class UserController extends AbstractController {
 		}
 
 		userUpdate.fields().forEachRemaining(e -> {
-			if (VALID_UPDATE_KEYS.contains(e.getKey())) {
+			if (VALID_KEYS_UPDATE.contains(e.getKey())) {
 				modUser.set(e.getKey(), e.getValue());
 			}
 		});
@@ -171,14 +175,6 @@ class UserController extends AbstractController {
 
 		// TODO Delete referenced objects
 		return restTemplate.exchange(paramPath, HttpMethod.DELETE, null, String.class, username);
-	}
-
-	private static void validateRequiredFileds(JsonNode json) throws MissingFieldException {
-		for (String field : CREATE_REQUIRED_KEYS) {
-			if (!json.hasNonNull(field)) {
-				throw new MissingFieldException("Field '" + field + "' is missing.");
-			}
-		}
 	}
 
 }

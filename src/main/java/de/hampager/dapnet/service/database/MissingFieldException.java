@@ -2,7 +2,7 @@ package de.hampager.dapnet.service.database;
 
 class MissingFieldException extends Exception {
 
-	private static final long serialVersionUID = -6799358690315547112L;
+	private static final long serialVersionUID = 1L;
 
 	public MissingFieldException() {
 	}

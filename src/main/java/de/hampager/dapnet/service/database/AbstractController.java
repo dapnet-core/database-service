@@ -36,6 +36,7 @@ abstract class AbstractController {
 	protected final RestTemplate restTemplate;
 	protected final String basePath;
 	protected final String paramPath;
+	protected final String viewBasePath;
 
 	protected AbstractController(DbConfig config, RestTemplateBuilder builder, String path) {
 		if (config.getUser() == null || config.getUser().isEmpty() || config.getPassword() == null
@@ -47,6 +48,7 @@ abstract class AbstractController {
 
 		basePath = String.format("%s/%s/", config.getHost(), path);
 		paramPath = basePath.concat("{param}");
+		viewBasePath = String.format("%s/_design/%s/_view/", basePath, path);
 	}
 
 	@ExceptionHandler(HttpClientErrorException.class)
@@ -66,6 +68,15 @@ abstract class AbstractController {
 			n.put("error", ex.getMessage());
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(n);
 		}
+	}
+
+	protected boolean isAuthenticated(Authentication authentication, String permission) {
+		return isAuthenticated(authentication, permission, null);
+	}
+
+	protected boolean isAuthenticated(Authentication authentication, String permission, String param) {
+		AuthResponse response = authenticate(authentication, permission, param);
+		return response != null && response.isAuthenticated() && response.isAllowed();
 	}
 
 	protected void ensureAuthenticated(Authentication authentication, String permission) {
@@ -91,9 +102,9 @@ abstract class AbstractController {
 		return auth.authenticate(authreq);
 	}
 
-	protected URI buildViewPath(String designDoc, String viewName, Map<String, String> requestParams) {
-		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(basePath);
-		builder.path("_design/" + designDoc + "/_view/" + viewName);
+	protected URI buildViewPath(String viewName, Map<String, String> requestParams) {
+		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(viewBasePath);
+		builder.path(viewName);
 		builder.queryParam("include_docs", "true").queryParam("limit", "20");
 
 		if (requestParams.containsKey("startswith")) {
