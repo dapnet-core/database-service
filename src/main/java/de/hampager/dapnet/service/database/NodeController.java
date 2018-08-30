@@ -45,7 +45,6 @@ class NodeController extends AbstractController {
 	private static final String NODE_UPDATE = "node.update";
 	private static final String NODE_CREATE = "node.create";
 	private static final String NODE_DELETE = "node.delete";
-	private static final String NODE_CHANGE_ROLE = "node.change_role";
 	private final String namePath;
 	private final String descriptionPath;
 
@@ -163,10 +162,6 @@ class NodeController extends AbstractController {
 
 	private ResponseEntity<JsonNode> updateNode(Authentication auth, JsonNode nodeUpdate) {
 		ensureAuthenticated(auth, NODE_UPDATE, auth.getName());
-
-		if (nodeUpdate.has("roles")) {
-			ensureAuthenticated(auth, NODE_CHANGE_ROLE, auth.getName());
-		}
 
 		JsonNode ownersNode = nodeUpdate.get("owners");
 		if (ownersNode == null || !ownersNode.isArray() || !ownersNode.elements().hasNext()) {
