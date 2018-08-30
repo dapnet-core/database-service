@@ -146,6 +146,8 @@ class NodeController extends AbstractController {
 			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST);
 		}
 
+		modNode.put("_id", modNode.get("_id").asText().toLowerCase());
+
 		final String ts = Instant.now().toString();
 		modNode.put("created_on", ts);
 		modNode.put("created_by", auth.getName());
@@ -164,6 +166,12 @@ class NodeController extends AbstractController {
 
 		if (nodeUpdate.has("roles")) {
 			ensureAuthenticated(auth, NODE_CHANGE_ROLE, auth.getName());
+		}
+
+		JsonNode ownersNode = nodeUpdate.get("owners");
+		if (ownersNode == null || !ownersNode.isArray() || !ownersNode.elements().hasNext()) {
+			String nodeId = nodeUpdate.get("_id").asText();
+			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST, "Owners list is empty " + nodeId);
 		}
 
 		final String nodeId = nodeUpdate.get("_id").asText();

@@ -121,6 +121,8 @@ class UserController extends AbstractController {
 			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST);
 		}
 
+		modUser.put("_id", modUser.get("_id").asText().toLowerCase());
+
 		final String ts = Instant.now().toString();
 		modUser.put("created_on", ts);
 		modUser.put("created_by", auth.getName());
