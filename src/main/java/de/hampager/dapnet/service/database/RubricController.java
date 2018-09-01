@@ -50,6 +50,7 @@ class RubricController extends AbstractController {
     private static final String RUBRIC_UPDATE = "rubric.update";
     private static final String RUBRIC_CREATE = "rubric.create";
     private static final String RUBRIC_DELETE = "rubric.delete";
+    private static final int RUBIC_MAX_NUMBER = 95;
     private final String namesPath;
     private final String descriptionPath;
     private final String labelPath;
@@ -114,6 +115,60 @@ class RubricController extends AbstractController {
         return ResponseEntity.ok(in);
     }
 
+    @GetMapping("_view/byNumber")
+    public ResponseEntity<JsonNode> getbyNumber(Authentication authentication, @RequestParam Map<String, String> params) {
+        ensureAuthenticated(authentication, RUBRIC_READ);
+
+        URI path = buildViewPath("byNumber", params);
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        out.put("total_rows", in.get("total_rows").asInt());
+        ArrayNode rows = out.putArray("rows");
+        for (JsonNode n : in.get("rows")) {
+            JsonNode doc = n.get("doc");
+            rows.add(doc);
+        }
+
+        return ResponseEntity.ok(out);
+    }
+
+    @GetMapping("_view/byTransmitter")
+    public ResponseEntity<JsonNode> getbyTransmitter(Authentication authentication, @RequestParam Map<String, String> params) {
+        ensureAuthenticated(authentication, RUBRIC_READ);
+
+        URI path = buildViewPath("byTransmitter", params);
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        out.put("total_rows", in.get("total_rows").asInt());
+        ArrayNode rows = out.putArray("rows");
+        for (JsonNode n : in.get("rows")) {
+            JsonNode doc = n.get("doc");
+            rows.add(doc);
+        }
+
+        return ResponseEntity.ok(out);
+    }
+
+    @GetMapping("_view/byTransmitterGroup")
+    public ResponseEntity<JsonNode> getbyTransmitterGroup(Authentication authentication, @RequestParam Map<String, String> params) {
+        ensureAuthenticated(authentication, RUBRIC_READ);
+
+        URI path = buildViewPath("byTransmitterGroup", params);
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        out.put("total_rows", in.get("total_rows").asInt());
+        ArrayNode rows = out.putArray("rows");
+        for (JsonNode n : in.get("rows")) {
+            JsonNode doc = n.get("doc");
+            rows.add(doc);
+        }
+
+        return ResponseEntity.ok(out);
+    }
+
 
     @GetMapping("{rubricname}")
     public ResponseEntity<JsonNode> getRubric(Authentication authentication, @PathVariable String rubricname) {
@@ -123,17 +178,21 @@ class RubricController extends AbstractController {
         return ResponseEntity.ok(in);
     }
 
-    // UNTESTED
     @PutMapping
     public ResponseEntity<JsonNode> putRubric(Authentication authentication, @RequestBody JsonNode rubric) {
+        if ( (rubric.has("number")) && (rubric.get("number").isInt()) &&
+                (rubric.get("number").intValue() > 95) ) {
+            // TODO: Throw error, as rubric number is to high to fit on Skypers
+        }
+
         if (rubric.has("_rev")) {
             return updateRubric(authentication, rubric);
         } else {
             return createRubric(authentication, rubric);
         }
     }
-    // UNTESTED
 
+    // UNTESTED
     private ResponseEntity<JsonNode> createRubric(Authentication auth, JsonNode rubric) {
         ensureAuthenticated(auth, RUBRIC_CREATE);
 

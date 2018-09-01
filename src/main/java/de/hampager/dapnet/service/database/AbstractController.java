@@ -32,7 +32,7 @@ abstract class AbstractController {
 	@Autowired
 	private AuthService auth;
 
-	private static final Set<String> VALID_PARAMS = Set.of("limit", "skip", "startkey", "endkey");
+	private static final Set<String> VALID_PARAMS = Set.of("limit", "skip", "startkey", "endkey", "key");
 	protected final RestTemplate restTemplate;
 	protected final String basePath;
 	protected final String paramPath;
