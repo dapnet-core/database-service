@@ -273,12 +273,12 @@ class RubricController extends AbstractController {
         return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, rubricId);
     }
     // UNTESTED
-    @DeleteMapping("{rubricname}")
-    public ResponseEntity<String> deleteRubric(Authentication authentication, @PathVariable String rubricname,
+    @DeleteMapping("{name}")
+    public ResponseEntity<String> deleteRubric(Authentication authentication, @PathVariable String name,
                                              @RequestParam String rev) {
-        ensureAuthenticated(authentication, RUBRIC_DELETE, rubricname);
+        ensureAuthenticated(authentication, RUBRIC_DELETE, name);
 
         // TODO Delete referenced objects
-        return restTemplate.exchange(paramPath, HttpMethod.DELETE, null, String.class, rubricname);
+        return restTemplate.exchange(paramPath, HttpMethod.DELETE, null, String.class, name);
     }
 }
