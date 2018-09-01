@@ -218,10 +218,21 @@ class RubricController extends AbstractController {
         modRubric.put("changed_on", ts);
         modRubric.put("changed_by", auth.getName());
 
-        // TODO make it working
-        // Check if optional fields for cyclic transmit are present or generate default entries
-        if ( (!modRubric.has("cyclic_transmit")) && (!modRubric.has("cyclic_transmit")) ) {
-//            if
+        // UNSTESTED
+        // Check if optional fields for cyclic transmit are present or generate default entries, or repair request
+        if ( (!modRubric.has("cyclic_transmit")) && (!modRubric.has("cyclic_transmit_interval")) ) {
+            // None given
+            modRubric.put("cyclic_transmit", false);
+            modRubric.put("cyclic_transmit_interval", 0);
+        } else if ( (!modRubric.has("cyclic_transmit")) &&
+                (modRubric.has("cyclic_transmit_interval")) ) {
+            // Just interval given, so set boolean flag
+            modRubric.put("cyclic_transmit", true);
+        } else if ( (modRubric.has("cyclic_transmit")) &&
+                (!modRubric.has("cyclic_transmit_interval")) ) {
+            // Just boolean flag given, but no interval, disable and set interval to 0
+            modRubric.put("cyclic_transmit", false);
+            modRubric.put("cyclic_transmit_interval", 0);
         }
 
         HttpHeaders headers = new HttpHeaders();
