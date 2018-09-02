@@ -44,7 +44,7 @@ class SubscriberController extends AbstractController {
 
     private static final Logger logger = LoggerFactory.getLogger(SubscriberController.class);
 
-    //TODO Define keys in Array "pagers"
+    //TODO Define keys in List "pagers"
 
     private static final Set<String> VALID_KEYS_UPDATE = Set.of("description", "pagers","owners");
     private static final String[] REQUIRED_KEYS_CREATE = { "_id", "pagers","owners" };
