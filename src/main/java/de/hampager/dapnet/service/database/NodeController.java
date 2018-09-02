@@ -145,7 +145,8 @@ class NodeController extends AbstractController {
 			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST);
 		}
 
-		modNode.put("_id", modNode.get("_id").asText().toLowerCase());
+		// Convert _id to lowercase and remove all whitespaces
+		modNode.put("_id", modNode.get("_id").asText().replaceAll("\\s+","").toLowerCase());
 
         // Remove whitespaces from owner array entries
         // TODO: Make it work
