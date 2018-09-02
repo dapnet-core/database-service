@@ -84,7 +84,7 @@ class RubricController extends AbstractController {
     }
 
     @GetMapping("_names")
-    public ResponseEntity<JsonNode> getRubricnames(Authentication authentication) {
+    public ResponseEntity<JsonNode> getNames(Authentication authentication) {
         ensureAuthenticated(authentication, RUBRIC_LIST);
 
         JsonNode in = restTemplate.getForObject(namesPath, JsonNode.class);
@@ -92,7 +92,7 @@ class RubricController extends AbstractController {
     }
 
     @GetMapping("_descriptions")
-    public ResponseEntity<JsonNode> getNodenamesDescription(Authentication authentication) {
+    public ResponseEntity<JsonNode> getDescription(Authentication authentication) {
         ensureAuthenticated(authentication, RUBRIC_LIST);
 
         JsonNode in = restTemplate.getForObject(descriptionPath, JsonNode.class);
@@ -100,7 +100,7 @@ class RubricController extends AbstractController {
     }
 
     @GetMapping("_labels")
-    public ResponseEntity<JsonNode> getNodenamesLabel(Authentication authentication) {
+    public ResponseEntity<JsonNode> getLabels(Authentication authentication) {
         ensureAuthenticated(authentication, RUBRIC_LIST);
 
         JsonNode in = restTemplate.getForObject(labelPath, JsonNode.class);
@@ -108,7 +108,7 @@ class RubricController extends AbstractController {
     }
 
     @GetMapping("_fullmeta")
-    public ResponseEntity<JsonNode> getNodenamesFullMeta(Authentication authentication) {
+    public ResponseEntity<JsonNode> getFullMeta(Authentication authentication) {
         ensureAuthenticated(authentication, RUBRIC_LIST);
 
         JsonNode in = restTemplate.getForObject(fullmetaPath, JsonNode.class);
