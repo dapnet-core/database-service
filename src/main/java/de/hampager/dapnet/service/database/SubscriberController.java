@@ -43,8 +43,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 class SubscriberController extends AbstractController {
 
     private static final Logger logger = LoggerFactory.getLogger(SubscriberController.class);
-    private static final Set<String> VALID_KEYS_UPDATE = Set.of("owners");
-    private static final String[] REQUIRED_KEYS_CREATE = { "_id", "owners" };
+
+    //TODO Define keys in Array "pagers"
+
+    private static final Set<String> VALID_KEYS_UPDATE = Set.of("description", "pagers","owners");
+    private static final String[] REQUIRED_KEYS_CREATE = { "_id", "pagers","owners" };
     private static final String SUBSCRIBER_LIST = "subscriber.list";
     private static final String SUBSCRIBER_READ = "subscriber.read";
     private static final String SUBSCRIBER_UPDATE = "subscriber.update";
@@ -79,7 +82,7 @@ class SubscriberController extends AbstractController {
     }
     // TODO: Add view to CouchDB ?
     @GetMapping("_names")
-    public ResponseEntity<JsonNode> getRubricnames(Authentication authentication) {
+    public ResponseEntity<JsonNode> getNames(Authentication authentication) {
         ensureAuthenticated(authentication, SUBSCRIBER_LIST);
 
         JsonNode in = restTemplate.getForObject(namesPath, JsonNode.class);
@@ -87,7 +90,7 @@ class SubscriberController extends AbstractController {
     }
     // TODO: Add view to CouchDB
     @GetMapping("_descriptions")
-    public ResponseEntity<JsonNode> getNodenamesDescription(Authentication authentication) {
+    public ResponseEntity<JsonNode> getDescription(Authentication authentication) {
         ensureAuthenticated(authentication, SUBSCRIBER_LIST);
 
         JsonNode in = restTemplate.getForObject(descriptionPath, JsonNode.class);
@@ -96,10 +99,10 @@ class SubscriberController extends AbstractController {
 
     // TODO: Add view to CouchDB
     @GetMapping("_view/byRIC")
-    public ResponseEntity<JsonNode> getbyNumber(Authentication authentication, @RequestParam Map<String, String> params) {
+    public ResponseEntity<JsonNode> getbyRIC(Authentication authentication, @RequestParam Map<String, String> params) {
         ensureAuthenticated(authentication, SUBSCRIBER_READ);
 
-        URI path = buildViewPath("byNumber", params);
+        URI path = buildViewPath("byRIC", params);
         JsonNode in = restTemplate.getForObject(path, JsonNode.class);
         ObjectNode out = mapper.createObjectNode();
 
@@ -148,7 +151,8 @@ class SubscriberController extends AbstractController {
             throw new HttpServerErrorException(HttpStatus.BAD_REQUEST);
         }
 
-        modSubscriber.put("_id", modSubscriber.get("_id").asText().toLowerCase());
+        modSubscriber.put("_id", modSubscriber.get("_id").asText().replaceAll("\\s+","").toLowerCase());
+        // Convert _id to lowercase and remove all whitespaces
 
         final String ts = Instant.now().toString();
         modSubscriber.put("created_on", ts);
@@ -195,7 +199,7 @@ class SubscriberController extends AbstractController {
     }
     // UNTESTED
     @DeleteMapping("{name}")
-    public ResponseEntity<String> deleteRubric(Authentication authentication, @PathVariable String name,
+    public ResponseEntity<String> deleteSubscriber(Authentication authentication, @PathVariable String name,
                                                @RequestParam String rev) {
         ensureAuthenticated(authentication, SUBSCRIBER_DELETE, name);
 
