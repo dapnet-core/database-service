@@ -147,6 +147,11 @@ class NodeController extends AbstractController {
 
 		modNode.put("_id", modNode.get("_id").asText().toLowerCase());
 
+        // Remove whitespaces from owner array entries
+        // TODO: Make it work
+		//modNode.put(SanitizeUtils.removeWhiteSpacefromArray(modNode.get("owners"));
+
+
 		final String ts = Instant.now().toString();
 		modNode.put("created_on", ts);
 		modNode.put("created_by", auth.getName());
