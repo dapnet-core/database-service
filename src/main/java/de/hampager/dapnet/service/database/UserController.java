@@ -56,7 +56,7 @@ class UserController extends AbstractController {
 	public UserController(DbConfig config, RestTemplateBuilder builder) {
 		super(config, builder, "users");
 
-		this.usernamesPath = basePath.concat("_design/users/_list/usernames/_all_docs");
+		this.usernamesPath = basePath.concat("_design/users/_list/usernames/byId");
 	}
 
 	@GetMapping
