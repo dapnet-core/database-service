@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @ConfigurationProperties("db")
-class DbConfig {
+public class DbConfig {
 
 	private String host;
 	private String user;

@@ -1,4 +1,4 @@
-package de.hampager.dapnet.service.database;
+package de.hampager.dapnet.service.database.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * 
  * @author Philipp Thiel
  */
-class AuthRequest {
+public class AuthRequest {
 
 	@JsonProperty(required = true)
 	private String username;

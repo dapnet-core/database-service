@@ -1,4 +1,4 @@
-package de.hampager.dapnet.service.database;
+package de.hampager.dapnet.service.database.model;
 
 import java.util.Set;
 
@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * 
  * @author Philipp Thiel
  */
-class AuthResponse {
+public class AuthResponse {
 
 	@JsonProperty(required = true)
 	private boolean authenticated;

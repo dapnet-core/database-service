@@ -1,4 +1,4 @@
-package de.hampager.dapnet.service.database;
+package de.hampager.dapnet.service.database.controller;
 
 import java.net.URI;
 import java.util.Map;
@@ -20,12 +20,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import de.hampager.dapnet.service.database.AuthService;
+import de.hampager.dapnet.service.database.DbConfig;
+import de.hampager.dapnet.service.database.model.AuthRequest;
+import de.hampager.dapnet.service.database.model.AuthResponse;
+
 /**
  * Base class for REST controllers.
  * 
  * @author Philipp Thiel
  */
-abstract class AbstractController {
+public abstract class AbstractController {
 
 	@Autowired
 	protected ObjectMapper mapper;

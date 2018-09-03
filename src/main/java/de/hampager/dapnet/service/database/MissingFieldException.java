@@ -1,27 +1,26 @@
 package de.hampager.dapnet.service.database;
 
-class MissingFieldException extends Exception {
+/**
+ * Exception that can be thrown if a required field is missing.
+ * 
+ * @author Philipp Thiel
+ */
+public class MissingFieldException extends Exception {
 
 	private static final long serialVersionUID = 1L;
+	private final String fieldName;
 
-	public MissingFieldException() {
+	public MissingFieldException(String fieldName) {
+		this.fieldName = fieldName;
 	}
 
-	public MissingFieldException(String message, Throwable cause, boolean enableSuppression,
-			boolean writableStackTrace) {
-		super(message, cause, enableSuppression, writableStackTrace);
-	}
-
-	public MissingFieldException(String message, Throwable cause) {
-		super(message, cause);
-	}
-
-	public MissingFieldException(String message) {
+	public MissingFieldException(String message, String fieldName) {
 		super(message);
+		this.fieldName = fieldName;
 	}
 
-	public MissingFieldException(Throwable cause) {
-		super(cause);
+	public String getFieldName() {
+		return fieldName;
 	}
 
 }

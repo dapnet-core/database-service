@@ -1,4 +1,4 @@
-package de.hampager.dapnet.service.database;
+package de.hampager.dapnet.service.database.controller;
 
 import java.net.URI;
 import java.time.Instant;
@@ -28,8 +28,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpServerErrorException;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import de.hampager.dapnet.service.database.DbConfig;
+import de.hampager.dapnet.service.database.JsonUtils;
+import de.hampager.dapnet.service.database.MissingFieldException;
 
 /**
  * This class implements the users REST endpoint.
@@ -38,7 +43,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  */
 @RestController
 @RequestMapping("users")
-class UserController extends AbstractController {
+public class UserController extends AbstractController {
 
 	private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 	private static final Set<String> VALID_KEYS_UPDATE = Set.of("email", "enabled", "password", "roles");
@@ -122,10 +127,10 @@ class UserController extends AbstractController {
 		}
 
 		// Convert _id to lowercase and remove all whitespaces
-		modUser.put("_id", modUser.get("_id").asText().replaceAll("\\s+","").toLowerCase());
+		modUser.put("_id", modUser.get("_id").asText().replaceAll("\\s+", "").toLowerCase());
 
 		// Remove all whitespaces from email
-		modUser.put("email", modUser.get("email").asText().replaceAll("\\s+",""));
+		modUser.put("email", modUser.get("email").asText().replaceAll("\\s+", ""));
 
 		final String ts = Instant.now().toString();
 		modUser.put("created_on", ts);
@@ -163,10 +168,10 @@ class UserController extends AbstractController {
 				modUser.set(e.getKey(), e.getValue());
 			}
 		});
-        // Remove all whitespaces from email if present
-        if (modUser.has("email")) {
-            modUser.put("email", modUser.get("email").asText().replaceAll("\\s+",""));
-        }
+		// Remove all whitespaces from email if present
+		if (modUser.has("email")) {
+			modUser.put("email", modUser.get("email").asText().replaceAll("\\s+", ""));
+		}
 
 		modUser.put("changed_on", Instant.now().toString());
 		modUser.put("changed_by", auth.getName());

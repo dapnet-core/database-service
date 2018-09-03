@@ -1,11 +1,11 @@
-package de.hampager.dapnet.service.database;
+package de.hampager.dapnet.service.database.model;
 
 /**
  * This class defines the available user roles.
  * 
  * @author Philipp Thiel
  */
-final class UserRoles {
+public final class UserRoles {
 
 	public static final String ADMIN = "admin";
 	public static final String USER = "user";

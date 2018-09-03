@@ -4,13 +4,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import de.hampager.dapnet.service.database.model.AuthRequest;
+import de.hampager.dapnet.service.database.model.AuthResponse;
+
 /**
  * This class implements the authentication service.
  * 
  * @author Philipp Thiel
  */
 @Service
-class AuthService {
+public class AuthService {
 
 	private final RestTemplate restTemplate = new RestTemplate();
 	private final String url;

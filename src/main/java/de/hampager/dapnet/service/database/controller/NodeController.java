@@ -1,4 +1,4 @@
-package de.hampager.dapnet.service.database;
+package de.hampager.dapnet.service.database.controller;
 
 import java.net.URI;
 import java.time.Instant;
@@ -31,9 +31,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import de.hampager.dapnet.service.database.DbConfig;
+import de.hampager.dapnet.service.database.JsonUtils;
+import de.hampager.dapnet.service.database.MissingFieldException;
+
 @RestController
 @RequestMapping("nodes")
-class NodeController extends AbstractController {
+public class NodeController extends AbstractController {
 
 	private static final Logger logger = LoggerFactory.getLogger(NodeController.class);
 	private static final Set<String> VALID_KEYS_UPDATE = Set.of("auth_key", "coordinates", "hamcloud", "owners",
@@ -146,12 +150,11 @@ class NodeController extends AbstractController {
 		}
 
 		// Convert _id to lowercase and remove all whitespaces
-		modNode.put("_id", modNode.get("_id").asText().replaceAll("\\s+","").toLowerCase());
+		modNode.put("_id", modNode.get("_id").asText().replaceAll("\\s+", "").toLowerCase());
 
-        // Remove whitespaces from owner array entries
-        // TODO: Make it work
-		//modNode.put(SanitizeUtils.removeWhiteSpacefromArray(modNode.get("owners"));
-
+		// Remove whitespaces from owner array entries
+		// TODO: Make it work
+		// modNode.put(SanitizeUtils.removeWhiteSpacefromArray(modNode.get("owners"));
 
 		final String ts = Instant.now().toString();
 		modNode.put("created_on", ts);
