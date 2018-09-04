@@ -2,6 +2,7 @@ package de.hampager.dapnet.service.database.controller;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,13 +29,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpServerErrorException;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import de.hampager.dapnet.service.database.DbConfig;
 import de.hampager.dapnet.service.database.JsonUtils;
 import de.hampager.dapnet.service.database.MissingFieldException;
+import de.hampager.dapnet.service.database.model.PermissionValue;
 
 /**
  * This class implements the users REST endpoint.
@@ -46,6 +47,7 @@ import de.hampager.dapnet.service.database.MissingFieldException;
 public class UserController extends AbstractController {
 
 	private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+	private static final Set<String> KEYS_GET_LIMITED = Set.of("_id", "roles", "enabled");
 	private static final Set<String> VALID_KEYS_UPDATE = Set.of("email", "enabled", "password", "roles");
 	private static final String[] REQUIRED_KEYS_CREATE = { "_id", "password", "email", "roles", "enabled",
 			"email_valid" };
@@ -66,26 +68,33 @@ public class UserController extends AbstractController {
 
 	@GetMapping
 	public ResponseEntity<JsonNode> getAll(Authentication authentication, @RequestParam Map<String, String> params) {
-		ensureAuthenticated(authentication, USER_READ);
+		final PermissionValue permission = requirePermissionValue(authentication, USER_READ);
 
 		URI path = buildViewPath("byId", params);
-		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+		final JsonNode in = restTemplate.getForObject(path, JsonNode.class);
 		ObjectNode out = mapper.createObjectNode();
 
 		out.put("total_rows", in.get("total_rows").asInt());
 		ArrayNode rows = out.putArray("rows");
 		for (JsonNode n : in.get("rows")) {
-			JsonNode doc = n.get("doc");
-			((ObjectNode) doc).remove("password");
+			final ObjectNode doc = (ObjectNode) n.get("doc");
+			doc.remove("password");
+
+			if (permission != PermissionValue.ALL
+					&& !doc.get("_id").asText("").equalsIgnoreCase(authentication.getName())) {
+				JsonUtils.keepFields(doc, KEYS_GET_LIMITED);
+			}
+
 			rows.add(doc);
 		}
 
 		return ResponseEntity.ok(out);
+
 	}
 
 	@GetMapping("_usernames")
 	public ResponseEntity<JsonNode> getUsernames(Authentication authentication) {
-		ensureAuthenticated(authentication, USER_LIST);
+		requirePermissionValue(authentication, USER_LIST, PermissionValue.ALL);
 
 		JsonNode in = restTemplate.getForObject(usernamesPath, JsonNode.class);
 		return ResponseEntity.ok(in);
@@ -93,10 +102,14 @@ public class UserController extends AbstractController {
 
 	@GetMapping("{username}")
 	public ResponseEntity<JsonNode> getUser(Authentication authentication, @PathVariable String username) {
-		ensureAuthenticated(authentication, USER_READ, username);
+		final PermissionValue permission = requirePermissionValue(authentication, USER_READ);
 
-		JsonNode in = restTemplate.getForObject(paramPath, JsonNode.class, username);
-		((ObjectNode) in).remove("password");
+		final ObjectNode in = restTemplate.getForObject(paramPath, ObjectNode.class, username);
+		in.remove("password");
+		if (permission != PermissionValue.ALL && !in.get("_id").asText("").equalsIgnoreCase(authentication.getName())) {
+			JsonUtils.keepFields(in, KEYS_GET_LIMITED);
+		}
+
 		return ResponseEntity.ok(in);
 	}
 
@@ -110,13 +123,15 @@ public class UserController extends AbstractController {
 	}
 
 	private ResponseEntity<JsonNode> createUser(Authentication auth, JsonNode user) {
-		ensureAuthenticated(auth, USER_CREATE);
+		requirePermissionValue(auth, USER_CREATE, PermissionValue.ALL);
 
 		try {
-			JsonUtils.validateRequiredFields(user, REQUIRED_KEYS_CREATE);
+			JsonUtils.checkRequiredFields(user, REQUIRED_KEYS_CREATE);
 		} catch (MissingFieldException ex) {
 			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST, ex.getMessage());
 		}
+
+		user = JsonUtils.trimValues(user);
 
 		ObjectNode modUser;
 		try {
@@ -126,11 +141,7 @@ public class UserController extends AbstractController {
 			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST);
 		}
 
-		// Convert _id to lowercase and remove all whitespaces
-		modUser.put("_id", modUser.get("_id").asText().replaceAll("\\s+", "").toLowerCase());
-
-		// Remove all whitespaces from email
-		modUser.put("email", modUser.get("email").asText().replaceAll("\\s+", ""));
+		modUser.put("_id", modUser.get("_id").asText().toLowerCase());
 
 		final String ts = Instant.now().toString();
 		modUser.put("created_on", ts);
@@ -146,15 +157,16 @@ public class UserController extends AbstractController {
 	}
 
 	private ResponseEntity<JsonNode> updateUser(Authentication auth, JsonNode userUpdate) {
-		ensureAuthenticated(auth, USER_UPDATE, auth.getName());
-
-		if (userUpdate.has("roles")) {
-			ensureAuthenticated(auth, USER_CHANGE_ROLE, auth.getName());
-		}
+		userUpdate = JsonUtils.trimValues(userUpdate);
 
 		final String userId = userUpdate.get("_id").asText();
+		if (isOnlyRoleUpdate(userUpdate)) {
+			requireAdminOrOwner(auth, USER_CHANGE_ROLE, userId);
+		} else {
+			requireAdminOrOwner(auth, USER_UPDATE, userId);
+		}
 
-		JsonNode oldUser = restTemplate.getForObject(paramPath, JsonNode.class, userId);
+		final JsonNode oldUser = restTemplate.getForObject(paramPath, JsonNode.class, userId);
 		ObjectNode modUser;
 		try {
 			modUser = (ObjectNode) oldUser;
@@ -168,10 +180,6 @@ public class UserController extends AbstractController {
 				modUser.set(e.getKey(), e.getValue());
 			}
 		});
-		// Remove all whitespaces from email if present
-		if (modUser.has("email")) {
-			modUser.put("email", modUser.get("email").asText().replaceAll("\\s+", ""));
-		}
 
 		modUser.put("changed_on", Instant.now().toString());
 		modUser.put("changed_by", auth.getName());
@@ -186,10 +194,20 @@ public class UserController extends AbstractController {
 	@DeleteMapping("{username}")
 	public ResponseEntity<String> deleteUser(Authentication authentication, @PathVariable String username,
 			@RequestParam String rev) {
-		ensureAuthenticated(authentication, USER_DELETE, username);
-
+		requireAdminOrOwner(authentication, USER_DELETE, username);
 		// TODO Delete referenced objects
 		return restTemplate.exchange(paramPath, HttpMethod.DELETE, null, String.class, username);
+	}
+
+	private static boolean isOnlyRoleUpdate(JsonNode node) {
+		final Iterator<String> it = node.fieldNames();
+		while (it.hasNext()) {
+			if (!it.next().equalsIgnoreCase("roles")) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 }

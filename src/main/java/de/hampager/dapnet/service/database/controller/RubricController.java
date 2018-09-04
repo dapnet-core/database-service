@@ -68,10 +68,10 @@ public class RubricController extends AbstractController {
 		this.labelPath = basePath.concat("_design/rubrics/_list/labels/labels");
 		this.fullmetaPath = basePath.concat("_design/rubrics/_list/fullmeta/fullmeta");
 	}
-
+/*
 	@GetMapping
 	public ResponseEntity<JsonNode> getAll(Authentication authentication, @RequestParam Map<String, String> params) {
-		ensureAuthenticated(authentication, RUBRIC_READ);
+		ensurePermissionValue(authentication, RUBRIC_READ);
 
 		URI path = buildViewPath("byId", params);
 		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
@@ -89,7 +89,7 @@ public class RubricController extends AbstractController {
 
 	@GetMapping("_names")
 	public ResponseEntity<JsonNode> getNames(Authentication authentication) {
-		ensureAuthenticated(authentication, RUBRIC_LIST);
+		ensurePermissionValue(authentication, RUBRIC_LIST);
 
 		JsonNode in = restTemplate.getForObject(namesPath, JsonNode.class);
 		return ResponseEntity.ok(in);
@@ -97,7 +97,7 @@ public class RubricController extends AbstractController {
 
 	@GetMapping("_descriptions")
 	public ResponseEntity<JsonNode> getDescription(Authentication authentication) {
-		ensureAuthenticated(authentication, RUBRIC_LIST);
+		ensurePermissionValue(authentication, RUBRIC_LIST);
 
 		JsonNode in = restTemplate.getForObject(descriptionPath, JsonNode.class);
 		return ResponseEntity.ok(in);
@@ -105,7 +105,7 @@ public class RubricController extends AbstractController {
 
 	@GetMapping("_labels")
 	public ResponseEntity<JsonNode> getLabels(Authentication authentication) {
-		ensureAuthenticated(authentication, RUBRIC_LIST);
+		ensurePermissionValue(authentication, RUBRIC_LIST);
 
 		JsonNode in = restTemplate.getForObject(labelPath, JsonNode.class);
 		return ResponseEntity.ok(in);
@@ -113,7 +113,7 @@ public class RubricController extends AbstractController {
 
 	@GetMapping("_fullmeta")
 	public ResponseEntity<JsonNode> getFullMeta(Authentication authentication) {
-		ensureAuthenticated(authentication, RUBRIC_LIST);
+		ensurePermissionValue(authentication, RUBRIC_LIST);
 
 		JsonNode in = restTemplate.getForObject(fullmetaPath, JsonNode.class);
 		return ResponseEntity.ok(in);
@@ -122,7 +122,7 @@ public class RubricController extends AbstractController {
 	@GetMapping("_view/byNumber")
 	public ResponseEntity<JsonNode> getbyNumber(Authentication authentication,
 			@RequestParam Map<String, String> params) {
-		ensureAuthenticated(authentication, RUBRIC_READ);
+		ensurePermissionValue(authentication, RUBRIC_READ);
 
 		URI path = buildViewPath("byNumber", params);
 		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
@@ -141,7 +141,7 @@ public class RubricController extends AbstractController {
 	@GetMapping("_view/byTransmitter")
 	public ResponseEntity<JsonNode> getbyTransmitter(Authentication authentication,
 			@RequestParam Map<String, String> params) {
-		ensureAuthenticated(authentication, RUBRIC_READ);
+		ensurePermissionValue(authentication, RUBRIC_READ);
 
 		URI path = buildViewPath("byTransmitter", params);
 		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
@@ -160,7 +160,7 @@ public class RubricController extends AbstractController {
 	@GetMapping("_view/byTransmitterGroup")
 	public ResponseEntity<JsonNode> getbyTransmitterGroup(Authentication authentication,
 			@RequestParam Map<String, String> params) {
-		ensureAuthenticated(authentication, RUBRIC_READ);
+		ensurePermissionValue(authentication, RUBRIC_READ);
 
 		URI path = buildViewPath("byTransmitterGroup", params);
 		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
@@ -178,7 +178,7 @@ public class RubricController extends AbstractController {
 
 	@GetMapping("{rubricname}")
 	public ResponseEntity<JsonNode> getRubric(Authentication authentication, @PathVariable String rubricname) {
-		ensureAuthenticated(authentication, RUBRIC_READ, rubricname);
+		checkPermission(authentication, RUBRIC_READ, rubricname);
 
 		JsonNode in = restTemplate.getForObject(paramPath, JsonNode.class, rubricname);
 		return ResponseEntity.ok(in);
@@ -199,7 +199,7 @@ public class RubricController extends AbstractController {
 
 	// UNTESTED
 	private ResponseEntity<JsonNode> createRubric(Authentication auth, JsonNode rubric) {
-		ensureAuthenticated(auth, RUBRIC_CREATE);
+		ensurePermissionValue(auth, RUBRIC_CREATE);
 
 		try {
 			JsonUtils.validateRequiredFields(rubric, REQUIRED_KEYS_CREATE);
@@ -248,7 +248,7 @@ public class RubricController extends AbstractController {
 
 	// UNTESTED
 	private ResponseEntity<JsonNode> updateRubric(Authentication auth, JsonNode rubricUpdate) {
-		ensureAuthenticated(auth, RUBRIC_UPDATE, auth.getName());
+		checkPermission(auth, RUBRIC_UPDATE, auth.getName());
 
 		final String rubricId = rubricUpdate.get("_id").asText();
 
@@ -281,9 +281,10 @@ public class RubricController extends AbstractController {
 	@DeleteMapping("{name}")
 	public ResponseEntity<String> deleteRubric(Authentication authentication, @PathVariable String name,
 			@RequestParam String rev) {
-		ensureAuthenticated(authentication, RUBRIC_DELETE, name);
+		checkPermission(authentication, RUBRIC_DELETE, name);
 
 		// TODO Delete referenced objects
 		return restTemplate.exchange(paramPath, HttpMethod.DELETE, null, String.class, name);
 	}
+	*/
 }

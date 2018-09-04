@@ -13,13 +13,13 @@ import de.hampager.dapnet.service.database.model.AuthResponse;
  * @author Philipp Thiel
  */
 @Service
-public class AuthService {
+class AuthService {
 
 	private final RestTemplate restTemplate = new RestTemplate();
 	private final String url;
 
 	public AuthService(@Value("${auth.service}") String serviceUrl) {
-		this.url = serviceUrl + "/auth/users/permission/{path}/{param}";
+		this.url = serviceUrl + "/auth/users/login";
 	}
 
 	/**
@@ -28,8 +28,9 @@ public class AuthService {
 	 * @param request Authentication request
 	 * @return Authentication response
 	 */
-	public AuthResponse authenticate(AuthRequest request) {
-		return restTemplate.postForObject(url, request, AuthResponse.class, request.getPath(), request.getParam());
+	public AuthResponse authenticate(String username, String password) {
+		AuthRequest request = new AuthRequest(username, password);
+		return restTemplate.postForObject(url, request, AuthResponse.class);
 	}
 
 }

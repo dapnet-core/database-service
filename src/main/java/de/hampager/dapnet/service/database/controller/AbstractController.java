@@ -9,9 +9,9 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -20,10 +20,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import de.hampager.dapnet.service.database.AuthService;
+import de.hampager.dapnet.service.database.AppUser;
 import de.hampager.dapnet.service.database.DbConfig;
-import de.hampager.dapnet.service.database.model.AuthRequest;
-import de.hampager.dapnet.service.database.model.AuthResponse;
+import de.hampager.dapnet.service.database.model.PermissionValue;
 
 /**
  * Base class for REST controllers.
@@ -34,8 +33,6 @@ public abstract class AbstractController {
 
 	@Autowired
 	protected ObjectMapper mapper;
-	@Autowired
-	private AuthService auth;
 
 	private static final Set<String> VALID_PARAMS = Set.of("limit", "skip", "startkey", "endkey", "key");
 	protected final RestTemplate restTemplate;
@@ -75,38 +72,6 @@ public abstract class AbstractController {
 		}
 	}
 
-	protected boolean isAuthenticated(Authentication authentication, String permission) {
-		return isAuthenticated(authentication, permission, null);
-	}
-
-	protected boolean isAuthenticated(Authentication authentication, String permission, String param) {
-		AuthResponse response = authenticate(authentication, permission, param);
-		return response != null && response.isAuthenticated() && response.isAllowed();
-	}
-
-	protected void ensureAuthenticated(Authentication authentication, String permission) {
-		ensureAuthenticated(authentication, permission, null);
-	}
-
-	protected void ensureAuthenticated(Authentication authentication, String permission, String param) {
-		AuthResponse response = authenticate(authentication, permission, param);
-		if (response == null || !response.isAuthenticated()) {
-			throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED);
-		} else if (!response.isAllowed()) {
-			throw new HttpClientErrorException(HttpStatus.FORBIDDEN);
-		}
-	}
-
-	protected AuthResponse authenticate(Authentication authentication, String permission) {
-		return authenticate(authentication, permission, null);
-	}
-
-	protected AuthResponse authenticate(Authentication authentication, String permission, String param) {
-		UserDetails user = (UserDetails) authentication.getPrincipal();
-		AuthRequest authreq = new AuthRequest(user.getUsername(), user.getPassword(), permission, param);
-		return auth.authenticate(authreq);
-	}
-
 	protected URI buildViewPath(String viewName, Map<String, String> requestParams) {
 		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(viewBasePath);
 		builder.path(viewName);
@@ -127,6 +92,48 @@ public abstract class AbstractController {
 		});
 
 		return builder.build().toUri();
+	}
+
+	protected static PermissionValue requirePermissionValue(Authentication authentication, String permission,
+			PermissionValue... validValues) {
+		final PermissionValue current = ((AppUser) authentication.getPrincipal()).getPermissions()
+				.getOrDefault(permission, PermissionValue.NONE);
+		final boolean notNone = current != PermissionValue.NONE;
+
+		boolean hasPermission = true;
+		if (notNone && validValues != null && validValues.length > 1) {
+			hasPermission = false;
+			for (PermissionValue v : validValues) {
+				if (current == v) {
+					hasPermission = true;
+					break;
+				}
+			}
+		}
+
+		if (notNone && hasPermission) {
+			return current;
+		} else {
+			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
+		}
+	}
+
+	protected static PermissionValue requireAdminOrOwner(Authentication authentication, String permission,
+			String ownerName) {
+		final PermissionValue current = ((AppUser) authentication.getPrincipal()).getPermissions()
+				.getOrDefault(permission, PermissionValue.NONE);
+		final boolean notNone = current != PermissionValue.NONE;
+
+		boolean hasPermission = current == PermissionValue.ALL;
+		if (notNone && !hasPermission) {
+			hasPermission = ownerName.equalsIgnoreCase(authentication.getName());
+		}
+
+		if (notNone && hasPermission) {
+			return current;
+		} else {
+			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
+		}
 	}
 
 }

@@ -17,7 +17,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 class AppSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Autowired
-	private DummyAuthProvider authProvider;
+	private CustomAuthenticationProvider authProvider;
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
@@ -29,7 +29,7 @@ class AppSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-		auth.authenticationProvider(authProvider).eraseCredentials(false);
+		auth.authenticationProvider(authProvider);
 	}
 
 }

@@ -64,10 +64,10 @@ public class SubscriberController extends AbstractController {
 		this.namesPath = basePath.concat("_design/subscribers/_list/names/byId");
 		this.descriptionPath = basePath.concat("_design/subscribers/_list/descriptions/descriptions");
 	}
-
+/*
 	@GetMapping
 	public ResponseEntity<JsonNode> getAll(Authentication authentication, @RequestParam Map<String, String> params) {
-		ensureAuthenticated(authentication, SUBSCRIBER_READ);
+		ensurePermissionValue(authentication, SUBSCRIBER_READ);
 
 		URI path = buildViewPath("byId", params);
 		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
@@ -86,7 +86,7 @@ public class SubscriberController extends AbstractController {
 	// TODO: Add view to CouchDB ?
 	@GetMapping("_names")
 	public ResponseEntity<JsonNode> getNames(Authentication authentication) {
-		ensureAuthenticated(authentication, SUBSCRIBER_LIST);
+		ensurePermissionValue(authentication, SUBSCRIBER_LIST);
 
 		JsonNode in = restTemplate.getForObject(namesPath, JsonNode.class);
 		return ResponseEntity.ok(in);
@@ -95,7 +95,7 @@ public class SubscriberController extends AbstractController {
 	// TODO: Add view to CouchDB
 	@GetMapping("_descriptions")
 	public ResponseEntity<JsonNode> getDescription(Authentication authentication) {
-		ensureAuthenticated(authentication, SUBSCRIBER_LIST);
+		ensurePermissionValue(authentication, SUBSCRIBER_LIST);
 
 		JsonNode in = restTemplate.getForObject(descriptionPath, JsonNode.class);
 		return ResponseEntity.ok(in);
@@ -104,7 +104,7 @@ public class SubscriberController extends AbstractController {
 	// TODO: Add view to CouchDB
 	@GetMapping("_view/byRIC")
 	public ResponseEntity<JsonNode> getbyRIC(Authentication authentication, @RequestParam Map<String, String> params) {
-		ensureAuthenticated(authentication, SUBSCRIBER_READ);
+		ensurePermissionValue(authentication, SUBSCRIBER_READ);
 
 		URI path = buildViewPath("byRIC", params);
 		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
@@ -122,7 +122,7 @@ public class SubscriberController extends AbstractController {
 
 	@GetMapping("{name}")
 	public ResponseEntity<JsonNode> getSubscriber(Authentication authentication, @PathVariable String subscriber) {
-		ensureAuthenticated(authentication, SUBSCRIBER_READ, subscriber);
+		checkPermission(authentication, SUBSCRIBER_READ, subscriber);
 
 		JsonNode in = restTemplate.getForObject(paramPath, JsonNode.class, subscriber);
 		return ResponseEntity.ok(in);
@@ -139,7 +139,7 @@ public class SubscriberController extends AbstractController {
 
 	// UNTESTED
 	private ResponseEntity<JsonNode> createSubscriber(Authentication auth, JsonNode subscriber) {
-		ensureAuthenticated(auth, SUBSCRIBER_CREATE);
+		ensurePermissionValue(auth, SUBSCRIBER_CREATE);
 
 		try {
 			JsonUtils.validateRequiredFields(subscriber, REQUIRED_KEYS_CREATE);
@@ -174,7 +174,7 @@ public class SubscriberController extends AbstractController {
 
 	// UNTESTED
 	private ResponseEntity<JsonNode> updateSubscriber(Authentication auth, JsonNode subscriberUpdate) {
-		ensureAuthenticated(auth, SUBSCRIBER_UPDATE, auth.getName());
+		checkPermission(auth, SUBSCRIBER_UPDATE, auth.getName());
 
 		final String subscriberId = subscriberUpdate.get("_id").asText();
 
@@ -207,9 +207,10 @@ public class SubscriberController extends AbstractController {
 	@DeleteMapping("{name}")
 	public ResponseEntity<String> deleteSubscriber(Authentication authentication, @PathVariable String name,
 			@RequestParam String rev) {
-		ensureAuthenticated(authentication, SUBSCRIBER_DELETE, name);
+		checkPermission(authentication, SUBSCRIBER_DELETE, name);
 
 		// TODO Delete referenced objects
 		return restTemplate.exchange(paramPath, HttpMethod.DELETE, null, String.class, name);
 	}
+	*/
 }

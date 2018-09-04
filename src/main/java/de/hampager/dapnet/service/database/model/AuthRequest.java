@@ -1,6 +1,7 @@
 package de.hampager.dapnet.service.database.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.io.Serializable;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -8,16 +9,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * 
  * @author Philipp Thiel
  */
-public class AuthRequest {
+public class AuthRequest implements Serializable {
 
+	private static final long serialVersionUID = 1L;
 	@JsonProperty(required = true)
 	private String username;
 	@JsonProperty(required = true)
 	private String password;
-	@JsonIgnore
-	private String path;
-	@JsonIgnore
-	private String param;
 
 	/**
 	 * Default constructor
@@ -30,25 +28,10 @@ public class AuthRequest {
 	 * 
 	 * @param username Username
 	 * @param password Password
-	 * @param path     Requested permission path
 	 */
-	public AuthRequest(String username, String password, String path) {
-		this(username, password, path, null);
-	}
-
-	/**
-	 * Constructs a new authentication request.
-	 * 
-	 * @param username Username
-	 * @param password Password
-	 * @param path     Requested permission path
-	 * @param param    Optional permission parameter
-	 */
-	public AuthRequest(String username, String password, String path, String param) {
+	public AuthRequest(String username, String password) {
 		this.username = username;
 		this.password = password;
-		this.path = path;
-		this.param = param;
 	}
 
 	/**
@@ -85,42 +68,6 @@ public class AuthRequest {
 	 */
 	public void setPassword(String password) {
 		this.password = password;
-	}
-
-	/**
-	 * Gets the requested permission path.
-	 * 
-	 * @return Permission path
-	 */
-	public String getPath() {
-		return path;
-	}
-
-	/**
-	 * Sets the requested permission path.
-	 * 
-	 * @param path Permission path
-	 */
-	public void setPermission(String path) {
-		this.path = path;
-	}
-
-	/**
-	 * Gets the optional permission parameter.
-	 * 
-	 * @return Permission parameter or {@code null}.
-	 */
-	public String getParam() {
-		return param;
-	}
-
-	/**
-	 * Sets the optional permission parameter.
-	 * 
-	 * @param param Permission parameter
-	 */
-	public void setParam(String param) {
-		this.param = param;
 	}
 
 }
