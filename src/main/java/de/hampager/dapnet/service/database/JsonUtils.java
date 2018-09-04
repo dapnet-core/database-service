@@ -29,6 +29,7 @@ public class JsonUtils {
 	}
 
 	public static JsonNode trimValues(JsonNode input) {
+		// TODO Check if node is ObjectNode and handle other cases
 		final ObjectNode out = OBJECT_MAPPER.createObjectNode();
 		final Iterator<Entry<String, JsonNode>> it = input.fields();
 		while (it.hasNext()) {

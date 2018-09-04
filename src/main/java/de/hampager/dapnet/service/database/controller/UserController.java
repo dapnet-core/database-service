@@ -46,7 +46,7 @@ import de.hampager.dapnet.service.database.model.PermissionValue;
 @RequestMapping("users")
 public class UserController extends AbstractController {
 
-	private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(UserController.class);
 	private static final Set<String> KEYS_GET_LIMITED = Set.of("_id", "roles", "enabled");
 	private static final Set<String> VALID_KEYS_UPDATE = Set.of("email", "enabled", "password", "roles");
 	private static final String[] REQUIRED_KEYS_CREATE = { "_id", "password", "email", "roles", "enabled",
@@ -70,9 +70,9 @@ public class UserController extends AbstractController {
 	public ResponseEntity<JsonNode> getAll(Authentication authentication, @RequestParam Map<String, String> params) {
 		final PermissionValue permission = requirePermissionValue(authentication, USER_READ);
 
-		URI path = buildViewPath("byId", params);
+		final URI path = buildViewPath("byId", params);
 		final JsonNode in = restTemplate.getForObject(path, JsonNode.class);
-		ObjectNode out = mapper.createObjectNode();
+		final ObjectNode out = mapper.createObjectNode();
 
 		out.put("total_rows", in.get("total_rows").asInt());
 		ArrayNode rows = out.putArray("rows");
@@ -131,15 +131,7 @@ public class UserController extends AbstractController {
 			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST, ex.getMessage());
 		}
 
-		user = JsonUtils.trimValues(user);
-
-		ObjectNode modUser;
-		try {
-			modUser = (ObjectNode) user;
-		} catch (ClassCastException ex) {
-			logger.error("Failed to cast JsonNode to ObjectNode");
-			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST);
-		}
+		final ObjectNode modUser = (ObjectNode) JsonUtils.trimValues(user);
 
 		modUser.put("_id", modUser.get("_id").asText().toLowerCase());
 
@@ -166,28 +158,21 @@ public class UserController extends AbstractController {
 			requireAdminOrOwner(auth, USER_UPDATE, userId);
 		}
 
-		final JsonNode oldUser = restTemplate.getForObject(paramPath, JsonNode.class, userId);
-		ObjectNode modUser;
-		try {
-			modUser = (ObjectNode) oldUser;
-		} catch (ClassCastException ex) {
-			logger.error("Failed to cast JsonNode to ObjectNode");
-			throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+		final ObjectNode oldUser = restTemplate.getForObject(paramPath, ObjectNode.class, userId);
 
 		userUpdate.fields().forEachRemaining(e -> {
 			if (VALID_KEYS_UPDATE.contains(e.getKey())) {
-				modUser.set(e.getKey(), e.getValue());
+				oldUser.set(e.getKey(), e.getValue());
 			}
 		});
 
-		modUser.put("changed_on", Instant.now().toString());
-		modUser.put("changed_by", auth.getName());
+		oldUser.put("updated_on", Instant.now().toString());
+		oldUser.put("updated_by", auth.getName());
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-		HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(modUser, headers);
+		HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(oldUser, headers);
 		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, userId);
 	}
 
