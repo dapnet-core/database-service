@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import de.hampager.dapnet.service.database.AppUser;
+import de.hampager.dapnet.service.database.AuthenticationFacade;
 import de.hampager.dapnet.service.database.DbConfig;
 import de.hampager.dapnet.service.database.model.PermissionValue;
 
@@ -33,6 +34,8 @@ public abstract class AbstractController {
 
 	@Autowired
 	protected ObjectMapper mapper;
+	@Autowired
+	private AuthenticationFacade authFacade;
 
 	private static final Set<String> VALID_PARAMS = Set.of("limit", "skip", "startkey", "endkey", "key");
 	protected final RestTemplate restTemplate;
@@ -94,16 +97,20 @@ public abstract class AbstractController {
 		return builder.build().toUri();
 	}
 
-	protected static PermissionValue requirePermissionValue(Authentication authentication, String permission,
-			PermissionValue... validValues) {
-		final PermissionValue current = ((AppUser) authentication.getPrincipal()).getPermissions()
-				.getOrDefault(permission, PermissionValue.NONE);
+	protected AppUser getCurrentUser() {
+		final Authentication auth = authFacade.getAuthentication();
+		return auth != null ? (AppUser) auth.getPrincipal() : null;
+	}
+
+	protected PermissionValue requirePermission(String permission, PermissionValue... required) {
+		final PermissionValue current = getCurrentUser().getPermissions().getOrDefault(permission,
+				PermissionValue.NONE);
 		final boolean notNone = current != PermissionValue.NONE;
 
 		boolean hasPermission = true;
-		if (notNone && validValues != null && validValues.length > 1) {
+		if (notNone && required != null && required.length > 1) {
 			hasPermission = false;
-			for (PermissionValue v : validValues) {
+			for (PermissionValue v : required) {
 				if (current == v) {
 					hasPermission = true;
 					break;
@@ -118,15 +125,14 @@ public abstract class AbstractController {
 		}
 	}
 
-	protected static PermissionValue requireAdminOrOwner(Authentication authentication, String permission,
-			String ownerName) {
-		final PermissionValue current = ((AppUser) authentication.getPrincipal()).getPermissions()
-				.getOrDefault(permission, PermissionValue.NONE);
+	protected PermissionValue requireAdminOrOwner(String permission, String ownerName) {
+		final AppUser user = getCurrentUser();
+		final PermissionValue current = user.getPermissions().getOrDefault(permission, PermissionValue.NONE);
 		final boolean notNone = current != PermissionValue.NONE;
 
 		boolean hasPermission = current == PermissionValue.ALL;
 		if (notNone && !hasPermission) {
-			hasPermission = ownerName.equalsIgnoreCase(authentication.getName());
+			hasPermission = ownerName.equalsIgnoreCase(user.getUsername());
 		}
 
 		if (notNone && hasPermission) {

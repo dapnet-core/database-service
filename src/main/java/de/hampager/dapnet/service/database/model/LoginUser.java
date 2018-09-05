@@ -6,7 +6,7 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class AuthUser implements Serializable {
+public class LoginUser implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	@JsonProperty(value = "_id", required = true)

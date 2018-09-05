@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * 
  * @author Philipp Thiel
  */
-public class AuthRequest implements Serializable {
+public class LoginRequest implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	@JsonProperty(required = true)
@@ -20,16 +20,16 @@ public class AuthRequest implements Serializable {
 	/**
 	 * Default constructor
 	 */
-	public AuthRequest() {
+	public LoginRequest() {
 	}
 
 	/**
-	 * Constructs a new authentication request.
+	 * Constructs a new login request.
 	 * 
 	 * @param username Username
 	 * @param password Password
 	 */
-	public AuthRequest(String username, String password) {
+	public LoginRequest(String username, String password) {
 		this.username = username;
 		this.password = password;
 	}

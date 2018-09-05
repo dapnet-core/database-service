@@ -2,6 +2,7 @@ package de.hampager.dapnet.service.database;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -10,8 +11,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import de.hampager.dapnet.service.database.model.AuthResponse;
-import de.hampager.dapnet.service.database.model.AuthUser;
+import de.hampager.dapnet.service.database.model.LoginResponse;
+import de.hampager.dapnet.service.database.model.LoginUser;
 import de.hampager.dapnet.service.database.model.PermissionValue;
 
 public class AppUser implements UserDetails {
@@ -24,18 +25,18 @@ public class AppUser implements UserDetails {
 	private final Instant createdOn;
 	private final String createdBy;
 	private final Map<String, PermissionValue> permissions;
-	private final Set<GrantedAuthority> authorities;
+	private final Collection<GrantedAuthority> authorities;
 
-	public AppUser(AuthResponse authResponse) {
-		final AuthUser user = authResponse.getUser();
+	public AppUser(LoginResponse login) {
+		final LoginUser user = login.getUser();
 		this.username = user.getId();
 		this.revision = user.getRevision();
 		this.email = user.getEmail();
 		this.enabled = user.isEnabled();
-		this.authorities = user.getRoles().stream().map(SimpleGrantedAuthority::new).collect(Collectors.toSet());
 		this.createdBy = user.getCreatedBy();
 		this.createdOn = user.getCreatedOn();
-		this.permissions = authResponse.getPermissions();
+		this.permissions = Collections.unmodifiableMap(login.getPermissions());
+		this.authorities = convertToAuthorities(user.getRoles());
 	}
 
 	public String getRevision() {
@@ -91,6 +92,12 @@ public class AppUser implements UserDetails {
 	@Override
 	public boolean isEnabled() {
 		return enabled;
+	}
+
+	private static Collection<GrantedAuthority> convertToAuthorities(Set<String> roles) {
+		final Set<GrantedAuthority> authorities = roles.stream().map(SimpleGrantedAuthority::new)
+				.collect(Collectors.toSet());
+		return Collections.unmodifiableSet(authorities);
 	}
 
 }

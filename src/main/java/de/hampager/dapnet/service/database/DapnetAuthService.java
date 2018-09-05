@@ -4,8 +4,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import de.hampager.dapnet.service.database.model.AuthRequest;
-import de.hampager.dapnet.service.database.model.AuthResponse;
+import de.hampager.dapnet.service.database.model.LoginRequest;
+import de.hampager.dapnet.service.database.model.LoginResponse;
 
 /**
  * This class implements the authentication service.
@@ -13,12 +13,12 @@ import de.hampager.dapnet.service.database.model.AuthResponse;
  * @author Philipp Thiel
  */
 @Service
-class AuthService {
+class DapnetAuthService {
 
 	private final RestTemplate restTemplate = new RestTemplate();
 	private final String url;
 
-	public AuthService(@Value("${auth.service}") String serviceUrl) {
+	public DapnetAuthService(@Value("${auth.service}") String serviceUrl) {
 		this.url = serviceUrl + "/auth/users/login";
 	}
 
@@ -28,9 +28,9 @@ class AuthService {
 	 * @param request Authentication request
 	 * @return Authentication response
 	 */
-	public AuthResponse authenticate(String username, String password) {
-		AuthRequest request = new AuthRequest(username, password);
-		return restTemplate.postForObject(url, request, AuthResponse.class);
+	public LoginResponse login(String username, String password) {
+		LoginRequest request = new LoginRequest(username, password);
+		return restTemplate.postForObject(url, request, LoginResponse.class);
 	}
 
 }

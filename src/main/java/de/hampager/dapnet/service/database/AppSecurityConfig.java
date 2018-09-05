@@ -17,7 +17,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 class AppSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Autowired
-	private CustomAuthenticationProvider authProvider;
+	private DapnetAuthenticationProvider authProvider;
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {

@@ -8,7 +8,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import de.hampager.dapnet.service.database.model.AuthResponse;
+import de.hampager.dapnet.service.database.model.LoginResponse;
 
 /**
  * This class implements a dummy authentication provider that accepts all
@@ -17,12 +17,12 @@ import de.hampager.dapnet.service.database.model.AuthResponse;
  * @author Philipp Thiel
  */
 @Component
-class CustomAuthenticationProvider implements AuthenticationProvider {
+class DapnetAuthenticationProvider implements AuthenticationProvider {
 
-	private final AuthService authService;
+	private final DapnetAuthService authService;
 
 	@Autowired
-	public CustomAuthenticationProvider(AuthService authService) {
+	public DapnetAuthenticationProvider(DapnetAuthService authService) {
 		this.authService = authService;
 	}
 
@@ -30,7 +30,7 @@ class CustomAuthenticationProvider implements AuthenticationProvider {
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 		final String username = authentication.getName();
 		final String password = authentication.getCredentials().toString();
-		final AuthResponse response = authService.authenticate(username, password);
+		final LoginResponse response = authService.login(username, password);
 		final UserDetails user = new AppUser(response);
 
 		return new UsernamePasswordAuthenticationToken(user, password, user.getAuthorities());

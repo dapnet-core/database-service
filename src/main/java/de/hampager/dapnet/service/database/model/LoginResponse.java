@@ -8,17 +8,17 @@ import java.util.Map;
  * 
  * @author Philipp Thiel
  */
-public class AuthResponse implements Serializable {
+public class LoginResponse implements Serializable {
 
 	private static final long serialVersionUID = 1L;
-	private AuthUser user;
+	private LoginUser user;
 	private Map<String, PermissionValue> permissions;
 
-	public AuthUser getUser() {
+	public LoginUser getUser() {
 		return user;
 	}
 
-	public void setUser(AuthUser user) {
+	public void setUser(LoginUser user) {
 		this.user = user;
 	}
 

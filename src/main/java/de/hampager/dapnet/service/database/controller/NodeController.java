@@ -62,8 +62,8 @@ public class NodeController extends AbstractController {
 	}
 
 	@GetMapping
-	public ResponseEntity<JsonNode> getAll(Authentication authentication, @RequestParam Map<String, String> params) {
-		final PermissionValue permission = requirePermissionValue(authentication, NODE_READ);
+	public ResponseEntity<JsonNode> getAll(@RequestParam Map<String, String> params) {
+		final PermissionValue permission = requirePermission(NODE_READ);
 		final boolean hideFields = permission != PermissionValue.ALL;
 
 		URI path = buildViewPath("byId", params);
@@ -84,31 +84,31 @@ public class NodeController extends AbstractController {
 	}
 
 	@GetMapping("_names")
-	public ResponseEntity<JsonNode> getNodenames(Authentication authentication) {
-		requirePermissionValue(authentication, NODE_LIST, PermissionValue.ALL);
+	public ResponseEntity<JsonNode> getNodenames() {
+		requirePermission(NODE_LIST, PermissionValue.ALL);
 
 		JsonNode in = restTemplate.getForObject(namePath, JsonNode.class);
 		return ResponseEntity.ok(in);
 	}
 
 	@GetMapping("_descriptions")
-	public ResponseEntity<JsonNode> getNodenamesDescription(Authentication authentication) {
-		requirePermissionValue(authentication, NODE_LIST, PermissionValue.ALL);
+	public ResponseEntity<JsonNode> getNodenamesDescription() {
+		requirePermission(NODE_LIST, PermissionValue.ALL);
 
 		JsonNode in = restTemplate.getForObject(descriptionPath, JsonNode.class);
 		return ResponseEntity.ok(in);
 	}
 
 	@GetMapping("{nodename}")
-	public ResponseEntity<JsonNode> getNode(Authentication authentication, @PathVariable String nodename) {
-		final AppUser user = (AppUser) authentication.getPrincipal();
-		final PermissionValue permission = user.getPermissions().getOrDefault(NODE_READ, PermissionValue.NONE);
+	public ResponseEntity<JsonNode> getNode(@PathVariable String nodename) {
+		final AppUser appUser = getCurrentUser();
+		final PermissionValue permission = appUser.getPermissions().getOrDefault(NODE_READ, PermissionValue.NONE);
 		if (permission == PermissionValue.NONE) {
 			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
 		}
 
 		JsonNode in = restTemplate.getForObject(paramPath, JsonNode.class, nodename);
-		if ((permission == PermissionValue.IF_OWNER && !JsonUtils.isOwner(in, user.getUsername()))
+		if ((permission == PermissionValue.IF_OWNER && !JsonUtils.isOwner(in, appUser.getUsername()))
 				|| permission != PermissionValue.ALL) {
 			((ObjectNode) in).remove("auth_key");
 		}
@@ -117,16 +117,17 @@ public class NodeController extends AbstractController {
 	}
 
 	@PutMapping
-	public ResponseEntity<JsonNode> putNode(Authentication authentication, @RequestBody JsonNode node) {
+	public ResponseEntity<JsonNode> putNode(@RequestBody JsonNode node) {
 		if (node.has("_rev")) {
-			return updateNode(authentication, node);
+			return updateNode(node);
 		} else {
-			return createNode(authentication, node);
+			return createNode(node);
 		}
 	}
 
-	private ResponseEntity<JsonNode> createNode(Authentication auth, JsonNode node) {
-		requirePermissionValue(auth, NODE_CREATE, PermissionValue.ALL);
+	private ResponseEntity<JsonNode> createNode(JsonNode node) {
+		requirePermission(NODE_CREATE, PermissionValue.ALL);
+		final AppUser appUser = getCurrentUser();
 
 		try {
 			JsonUtils.checkRequiredFields(node, REQUIRED_KEYS_CREATE);
@@ -156,9 +157,9 @@ public class NodeController extends AbstractController {
 
 		final String ts = Instant.now().toString();
 		modNode.put("created_on", ts);
-		modNode.put("created_by", auth.getName());
+		modNode.put("created_by", appUser.getUsername());
 		modNode.put("changed_on", ts);
-		modNode.put("changed_by", auth.getName());
+		modNode.put("changed_by", appUser.getUsername());
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -167,9 +168,10 @@ public class NodeController extends AbstractController {
 		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, modNode.get("_id").asText());
 	}
 
-	private ResponseEntity<JsonNode> updateNode(Authentication auth, JsonNode nodeUpdate) {
-		final PermissionValue permission = requirePermissionValue(auth, NODE_UPDATE, PermissionValue.ALL,
+	private ResponseEntity<JsonNode> updateNode(JsonNode nodeUpdate) {
+		final PermissionValue permission = requirePermission(NODE_UPDATE, PermissionValue.ALL,
 				PermissionValue.IF_OWNER);
+		final AppUser appUser = getCurrentUser();
 
 		nodeUpdate = JsonUtils.trimValues(nodeUpdate);
 
@@ -181,7 +183,7 @@ public class NodeController extends AbstractController {
 		}
 
 		final JsonNode oldNode = restTemplate.getForObject(paramPath, JsonNode.class, nodeId);
-		if (permission == PermissionValue.IF_OWNER && !JsonUtils.isOwner(oldNode, auth.getName())) {
+		if (permission == PermissionValue.IF_OWNER && !JsonUtils.isOwner(oldNode, appUser.getUsername())) {
 			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
 		}
 
@@ -200,7 +202,7 @@ public class NodeController extends AbstractController {
 		});
 
 		modNode.put("changed_on", Instant.now().toString());
-		modNode.put("changed_by", auth.getName());
+		modNode.put("changed_by", appUser.getUsername());
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);

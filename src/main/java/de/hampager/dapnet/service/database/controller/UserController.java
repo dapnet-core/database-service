@@ -17,7 +17,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,6 +31,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import de.hampager.dapnet.service.database.AppUser;
 import de.hampager.dapnet.service.database.DbConfig;
 import de.hampager.dapnet.service.database.JsonUtils;
 import de.hampager.dapnet.service.database.MissingFieldException;
@@ -67,8 +67,9 @@ public class UserController extends AbstractController {
 	}
 
 	@GetMapping
-	public ResponseEntity<JsonNode> getAll(Authentication authentication, @RequestParam Map<String, String> params) {
-		final PermissionValue permission = requirePermissionValue(authentication, USER_READ);
+	public ResponseEntity<JsonNode> getAll(@RequestParam Map<String, String> params) {
+		final PermissionValue permission = requirePermission(USER_READ);
+		final AppUser appUser = getCurrentUser();
 
 		final URI path = buildViewPath("byId", params);
 		final JsonNode in = restTemplate.getForObject(path, JsonNode.class);
@@ -81,7 +82,7 @@ public class UserController extends AbstractController {
 			doc.remove("password");
 
 			if (permission != PermissionValue.ALL
-					&& !doc.get("_id").asText("").equalsIgnoreCase(authentication.getName())) {
+					&& !doc.get("_id").asText("").equalsIgnoreCase(appUser.getUsername())) {
 				JsonUtils.keepFields(doc, KEYS_GET_LIMITED);
 			}
 
@@ -93,20 +94,21 @@ public class UserController extends AbstractController {
 	}
 
 	@GetMapping("_usernames")
-	public ResponseEntity<JsonNode> getUsernames(Authentication authentication) {
-		requirePermissionValue(authentication, USER_LIST, PermissionValue.ALL);
+	public ResponseEntity<JsonNode> getUsernames() {
+		requirePermission(USER_LIST, PermissionValue.ALL);
 
 		JsonNode in = restTemplate.getForObject(usernamesPath, JsonNode.class);
 		return ResponseEntity.ok(in);
 	}
 
 	@GetMapping("{username}")
-	public ResponseEntity<JsonNode> getUser(Authentication authentication, @PathVariable String username) {
-		final PermissionValue permission = requirePermissionValue(authentication, USER_READ);
+	public ResponseEntity<JsonNode> getUser(@PathVariable String username) {
+		final PermissionValue permission = requirePermission(USER_READ);
+		final AppUser user = getCurrentUser();
 
 		final ObjectNode in = restTemplate.getForObject(paramPath, ObjectNode.class, username);
 		in.remove("password");
-		if (permission != PermissionValue.ALL && !in.get("_id").asText("").equalsIgnoreCase(authentication.getName())) {
+		if (permission != PermissionValue.ALL && !in.get("_id").asText("").equalsIgnoreCase(user.getUsername())) {
 			JsonUtils.keepFields(in, KEYS_GET_LIMITED);
 		}
 
@@ -114,16 +116,17 @@ public class UserController extends AbstractController {
 	}
 
 	@PutMapping
-	public ResponseEntity<JsonNode> putUser(Authentication authentication, @RequestBody JsonNode user) {
+	public ResponseEntity<JsonNode> putUser(@RequestBody JsonNode user) {
 		if (user.has("_rev")) {
-			return updateUser(authentication, user);
+			return updateUser(user);
 		} else {
-			return createUser(authentication, user);
+			return createUser(user);
 		}
 	}
 
-	private ResponseEntity<JsonNode> createUser(Authentication auth, JsonNode user) {
-		requirePermissionValue(auth, USER_CREATE, PermissionValue.ALL);
+	private ResponseEntity<JsonNode> createUser(JsonNode user) {
+		requirePermission(USER_CREATE, PermissionValue.ALL);
+		final AppUser appUser = getCurrentUser();
 
 		try {
 			JsonUtils.checkRequiredFields(user, REQUIRED_KEYS_CREATE);
@@ -137,9 +140,9 @@ public class UserController extends AbstractController {
 
 		final String ts = Instant.now().toString();
 		modUser.put("created_on", ts);
-		modUser.put("created_by", auth.getName());
+		modUser.put("created_by", appUser.getUsername());
 		modUser.put("changed_on", ts);
-		modUser.put("changed_by", auth.getName());
+		modUser.put("changed_by", appUser.getUsername());
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -148,14 +151,15 @@ public class UserController extends AbstractController {
 		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, modUser.get("_id").asText());
 	}
 
-	private ResponseEntity<JsonNode> updateUser(Authentication auth, JsonNode userUpdate) {
+	private ResponseEntity<JsonNode> updateUser(JsonNode userUpdate) {
 		userUpdate = JsonUtils.trimValues(userUpdate);
+		final AppUser appUser = getCurrentUser();
 
 		final String userId = userUpdate.get("_id").asText();
 		if (isOnlyRoleUpdate(userUpdate)) {
-			requireAdminOrOwner(auth, USER_CHANGE_ROLE, userId);
+			requireAdminOrOwner(USER_CHANGE_ROLE, userId);
 		} else {
-			requireAdminOrOwner(auth, USER_UPDATE, userId);
+			requireAdminOrOwner(USER_UPDATE, userId);
 		}
 
 		final ObjectNode oldUser = restTemplate.getForObject(paramPath, ObjectNode.class, userId);
@@ -167,7 +171,7 @@ public class UserController extends AbstractController {
 		});
 
 		oldUser.put("updated_on", Instant.now().toString());
-		oldUser.put("updated_by", auth.getName());
+		oldUser.put("updated_by", appUser.getUsername());
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -177,9 +181,8 @@ public class UserController extends AbstractController {
 	}
 
 	@DeleteMapping("{username}")
-	public ResponseEntity<String> deleteUser(Authentication authentication, @PathVariable String username,
-			@RequestParam String rev) {
-		requireAdminOrOwner(authentication, USER_DELETE, username);
+	public ResponseEntity<String> deleteUser(@PathVariable String username, @RequestParam String rev) {
+		requireAdminOrOwner(USER_DELETE, username);
 		// TODO Delete referenced objects
 		return restTemplate.exchange(paramPath, HttpMethod.DELETE, null, String.class, username);
 	}
