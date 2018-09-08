@@ -7,6 +7,7 @@ import javax.validation.constraints.Email;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
@@ -14,7 +15,8 @@ import com.fasterxml.jackson.annotation.JsonProperty.Access;
 public class UserDetailObject implements Serializable {
 
 	private static final long serialVersionUID = 1L;
-	@Pattern(regexp = "[A-Za-z0-9]")
+	@Pattern(regexp = "[A-Za-z0-9\\.\\-_]")
+	@Size(min = 3, max = 40)
 	@JsonProperty(value = "_id", required = true)
 	private String id;
 	@NotEmpty(groups = CreateObjectChecks.class)
