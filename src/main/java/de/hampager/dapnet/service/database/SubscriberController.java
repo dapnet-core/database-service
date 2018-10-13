@@ -54,12 +54,14 @@ class SubscriberController extends AbstractController {
     private static final String SUBSCRIBER_CREATE = "subscriber.create";
     private static final String SUBSCRIBER_DELETE = "subscriber.delete";
     private final String namesPath;
+    private final String groupsPath;
     private final String descriptionPath;
 
     @Autowired
     public SubscriberController(DbConfig config, RestTemplateBuilder builder) {
         super(config, builder, "subscribers");
         this.namesPath = basePath.concat("_design/subscribers/_list/names/byId");
+        this.groupsPath = basePath.concat("_design/subscribers/_list/groups/byGroup?group_level=5");
         this.descriptionPath = basePath.concat("_design/subscribers/_list/descriptions/descriptions");
     }
 
@@ -80,6 +82,7 @@ class SubscriberController extends AbstractController {
 
         return ResponseEntity.ok(out);
     }
+
     // TODO: Add view to CouchDB ?
     @GetMapping("_names")
     public ResponseEntity<JsonNode> getNames(Authentication authentication) {
@@ -88,6 +91,15 @@ class SubscriberController extends AbstractController {
         JsonNode in = restTemplate.getForObject(namesPath, JsonNode.class);
         return ResponseEntity.ok(in);
     }
+
+    @GetMapping("_groups")
+    public ResponseEntity<JsonNode> getGroups(Authentication authentication) {
+        ensureAuthenticated(authentication, SUBSCRIBER_LIST);
+
+        JsonNode in = restTemplate.getForObject(groupsPath, JsonNode.class);
+        return ResponseEntity.ok(in);
+    }
+
     // TODO: Add view to CouchDB
     @GetMapping("_descriptions")
     public ResponseEntity<JsonNode> getDescription(Authentication authentication) {
@@ -200,11 +212,10 @@ class SubscriberController extends AbstractController {
     // UNTESTED
     @DeleteMapping("{name}")
     public ResponseEntity<String> deleteSubscriber(Authentication authentication, @PathVariable String name,
-                                               @RequestParam String rev) {
+                                                   @RequestParam String rev) {
         ensureAuthenticated(authentication, SUBSCRIBER_DELETE, name);
 
         // TODO Delete referenced objects
         return restTemplate.exchange(paramPath, HttpMethod.DELETE, null, String.class, name);
     }
 }
-
