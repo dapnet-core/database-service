@@ -146,12 +146,11 @@ class NodeController extends AbstractController {
 		}
 
 		// Convert _id to lowercase and remove all whitespaces
-		modNode.put("_id", modNode.get("_id").asText().replaceAll("\\s+","").toLowerCase());
+		modNode.put("_id", modNode.get("_id").asText().replaceAll("\\s+", "").toLowerCase());
 
-        // Remove whitespaces from owner array entries
-        // TODO: Make it work
-		//modNode.put(SanitizeUtils.removeWhiteSpacefromArray(modNode.get("owners"));
-
+		// Remove whitespaces from owner array entries
+		// TODO: Make it work
+		// modNode.put(SanitizeUtils.removeWhiteSpacefromArray(modNode.get("owners"));
 
 		final String ts = Instant.now().toString();
 		modNode.put("created_on", ts);
