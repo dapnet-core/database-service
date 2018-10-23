@@ -2,7 +2,6 @@ package de.hampager.dapnet.service.database;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -10,11 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -27,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -213,7 +209,8 @@ class RubricController extends AbstractController {
 			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST);
 		}
 
-		modRubric.put("_id", modRubric.get("_id").asText().toLowerCase());
+		final String rubricId = modRubric.get("_id").asText().trim().toLowerCase();
+		modRubric.put("_id", rubricId);
 
 		final String ts = Instant.now().toString();
 		modRubric.put("created_on", ts);
@@ -237,20 +234,22 @@ class RubricController extends AbstractController {
 			modRubric.put("cyclic_transmit_interval", 0);
 		}
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-		HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(modRubric, headers);
-		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, modRubric.get("_id").asText());
+		final ResponseEntity<JsonNode> db = performPut(paramPath, rubricId, modRubric);
+		if (db.getStatusCode() == HttpStatus.CREATED) {
+			final URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}").buildAndExpand(rubricId)
+					.toUri();
+			return ResponseEntity.created(location).body(db.getBody());
+		} else {
+			return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
+		}
 	}
 
 	// UNTESTED
 	private ResponseEntity<JsonNode> updateRubric(Authentication auth, JsonNode rubricUpdate) {
 		ensureAuthenticated(auth, RUBRIC_UPDATE, auth.getName());
 
-		final String rubricId = rubricUpdate.get("_id").asText();
-
-		JsonNode oldRubric = restTemplate.getForObject(paramPath, JsonNode.class, rubricId);
+		final String rubricId = rubricUpdate.get("_id").asText().trim().toLowerCase();
+		final JsonNode oldRubric = restTemplate.getForObject(paramPath, JsonNode.class, rubricId);
 		ObjectNode modRubric;
 		try {
 			modRubric = (ObjectNode) oldRubric;
@@ -268,20 +267,18 @@ class RubricController extends AbstractController {
 		modRubric.put("changed_on", Instant.now().toString());
 		modRubric.put("changed_by", auth.getName());
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-		HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(modRubric, headers);
-		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, rubricId);
+		final ResponseEntity<JsonNode> db = performPut(paramPath, rubricId, modRubric);
+		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
 	// UNTESTED
 	@DeleteMapping("{name}")
-	public ResponseEntity<String> deleteRubric(Authentication authentication, @PathVariable String name,
+	public ResponseEntity<JsonNode> deleteRubric(Authentication authentication, @PathVariable String name,
 			@RequestParam String rev) {
 		ensureAuthenticated(authentication, RUBRIC_DELETE, name);
 
 		// TODO Delete referenced objects
-		return restTemplate.exchange(paramPath, HttpMethod.DELETE, null, String.class, name);
+		final ResponseEntity<JsonNode> db = performDelete(paramPath, name);
+		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 }

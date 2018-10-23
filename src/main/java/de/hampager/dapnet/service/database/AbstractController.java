@@ -130,7 +130,7 @@ abstract class AbstractController {
 		return builder.build().toUri();
 	}
 
-	protected ResponseEntity<JsonNode> putRequest(String path, String pathParam, JsonNode requestObject)
+	protected ResponseEntity<JsonNode> performPut(String path, String pathParam, JsonNode requestObject)
 			throws RestClientException {
 		final HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -138,4 +138,13 @@ abstract class AbstractController {
 		final HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(requestObject, headers);
 		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, pathParam);
 	}
+
+	protected ResponseEntity<JsonNode> performDelete(String path, String pathParam) {
+		final HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+		final HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(null, headers);
+		return restTemplate.exchange(paramPath, HttpMethod.DELETE, request, JsonNode.class, pathParam);
+	}
+
 }

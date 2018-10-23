@@ -1,18 +1,14 @@
 package de.hampager.dapnet.service.database;
 
+import java.net.URI;
 import java.time.Instant;
-import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -25,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -104,7 +101,8 @@ class TransmitterController extends AbstractController {
 			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST);
 		}
 
-		modTransmitter.put("_id", modTransmitter.get("_id").asText().replaceAll("\\s+", "").toLowerCase());
+		final String transmitterId = modTransmitter.get("_id").asText().trim().toLowerCase();
+		modTransmitter.put("_id", transmitterId);
 		// Convert _id to lowercase and remove all whitespaces
 
 		final String ts = Instant.now().toString();
@@ -113,12 +111,14 @@ class TransmitterController extends AbstractController {
 		modTransmitter.put("changed_on", ts);
 		modTransmitter.put("changed_by", auth.getName());
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-		HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(modTransmitter, headers);
-		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class,
-				modTransmitter.get("_id").asText());
+		final ResponseEntity<JsonNode> db = performPut(paramPath, transmitterId, modTransmitter);
+		if (db.getStatusCode() == HttpStatus.CREATED) {
+			final URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}")
+					.buildAndExpand(transmitterId).toUri();
+			return ResponseEntity.created(location).body(db.getBody());
+		} else {
+			return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
+		}
 	}
 
 	// UNTESTED
@@ -145,20 +145,18 @@ class TransmitterController extends AbstractController {
 		modTransmitter.put("changed_on", Instant.now().toString());
 		modTransmitter.put("changed_by", auth.getName());
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-		HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(modTransmitter, headers);
-		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, transmitterId);
+		final ResponseEntity<JsonNode> db = performPut(paramPath, transmitterId, modTransmitter);
+		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
 	// UNTESTED
 	@DeleteMapping("{name}")
-	public ResponseEntity<String> deleteTransmitter(Authentication authentication, @PathVariable String name,
+	public ResponseEntity<JsonNode> deleteTransmitter(Authentication authentication, @PathVariable String name,
 			@RequestParam String rev) {
 		ensureAuthenticated(authentication, TRANSMITTER_DELETE, name);
 
 		// TODO Delete referenced objects
-		return restTemplate.exchange(paramPath, HttpMethod.DELETE, null, String.class, name);
+		final ResponseEntity<JsonNode> db = performDelete(paramPath, name);
+		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 }

@@ -2,7 +2,6 @@ package de.hampager.dapnet.service.database;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -10,11 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -137,12 +132,7 @@ class UserController extends AbstractController {
 		modUser.put("changed_on", ts);
 		modUser.put("changed_by", auth.getName());
 
-//		final HttpHeaders headers = new HttpHeaders();
-//		headers.setContentType(MediaType.APPLICATION_JSON);
-//		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-//		final HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(modUser, headers);
-//		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, modUser.get("_id").asText());
-		final ResponseEntity<JsonNode> db = putRequest(paramPath, userId, modUser);
+		final ResponseEntity<JsonNode> db = performPut(paramPath, userId, modUser);
 		if (db.getStatusCode() == HttpStatus.CREATED) {
 			final URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}").buildAndExpand(userId)
 					.toUri();
@@ -183,22 +173,18 @@ class UserController extends AbstractController {
 		modUser.put("changed_on", Instant.now().toString());
 		modUser.put("changed_by", auth.getName());
 
-//		HttpHeaders headers = new HttpHeaders();
-//		headers.setContentType(MediaType.APPLICATION_JSON);
-//		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-//		HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(modUser, headers);
-//		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, userId);
-		final ResponseEntity<JsonNode> db = putRequest(paramPath, userId, modUser);
+		final ResponseEntity<JsonNode> db = performPut(paramPath, userId, modUser);
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
 	@DeleteMapping("{username}")
-	public ResponseEntity<String> deleteUser(Authentication authentication, @PathVariable String username,
+	public ResponseEntity<JsonNode> deleteUser(Authentication authentication, @PathVariable String username,
 			@RequestParam String rev) {
 		ensureAuthenticated(authentication, USER_DELETE, username);
 
 		// TODO Delete referenced objects
-		return restTemplate.exchange(paramPath, HttpMethod.DELETE, null, String.class, username);
+		final ResponseEntity<JsonNode> db = performDelete(paramPath, username);
+		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
 }
