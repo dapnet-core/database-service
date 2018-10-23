@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -123,11 +124,12 @@ class UserController extends AbstractController {
 			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST);
 		}
 
+		final String userId = modUser.get("_id").asText().trim().toLowerCase();
 		// Convert _id to lowercase and remove all whitespaces
-		modUser.put("_id", modUser.get("_id").asText().replaceAll("\\s+", "").toLowerCase());
+		modUser.put("_id", userId);
 
 		// Remove all whitespaces from email
-		modUser.put("email", modUser.get("email").asText().replaceAll("\\s+", ""));
+		modUser.put("email", modUser.get("email").asText().trim());
 
 		final String ts = Instant.now().toString();
 		modUser.put("created_on", ts);
@@ -135,11 +137,19 @@ class UserController extends AbstractController {
 		modUser.put("changed_on", ts);
 		modUser.put("changed_by", auth.getName());
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-		HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(modUser, headers);
-		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, modUser.get("_id").asText());
+//		final HttpHeaders headers = new HttpHeaders();
+//		headers.setContentType(MediaType.APPLICATION_JSON);
+//		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+//		final HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(modUser, headers);
+//		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, modUser.get("_id").asText());
+		final ResponseEntity<JsonNode> db = putRequest(paramPath, userId, modUser);
+		if (db.getStatusCode() == HttpStatus.CREATED) {
+			final URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}").buildAndExpand(userId)
+					.toUri();
+			return ResponseEntity.created(location).body(db.getBody());
+		} else {
+			return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
+		}
 	}
 
 	private ResponseEntity<JsonNode> updateUser(Authentication auth, JsonNode userUpdate) {
@@ -149,7 +159,7 @@ class UserController extends AbstractController {
 			ensureAuthenticated(auth, USER_CHANGE_ROLE, auth.getName());
 		}
 
-		final String userId = userUpdate.get("_id").asText();
+		final String userId = userUpdate.get("_id").asText().trim().toLowerCase();
 
 		JsonNode oldUser = restTemplate.getForObject(paramPath, JsonNode.class, userId);
 		ObjectNode modUser;
@@ -165,19 +175,21 @@ class UserController extends AbstractController {
 				modUser.set(e.getKey(), e.getValue());
 			}
 		});
-		// Remove all whitespaces from email if present
+
 		if (modUser.has("email")) {
-			modUser.put("email", modUser.get("email").asText().replaceAll("\\s+", ""));
+			modUser.put("email", modUser.get("email").asText().trim());
 		}
 
 		modUser.put("changed_on", Instant.now().toString());
 		modUser.put("changed_by", auth.getName());
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-		HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(modUser, headers);
-		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, userId);
+//		HttpHeaders headers = new HttpHeaders();
+//		headers.setContentType(MediaType.APPLICATION_JSON);
+//		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+//		HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(modUser, headers);
+//		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, userId);
+		final ResponseEntity<JsonNode> db = putRequest(paramPath, userId, modUser);
+		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
 	@DeleteMapping("{username}")

@@ -1,17 +1,23 @@
 package de.hampager.dapnet.service.database;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -124,4 +130,12 @@ abstract class AbstractController {
 		return builder.build().toUri();
 	}
 
+	protected ResponseEntity<JsonNode> putRequest(String path, String pathParam, JsonNode requestObject)
+			throws RestClientException {
+		final HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+		final HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(requestObject, headers);
+		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, pathParam);
+	}
 }
