@@ -6,7 +6,9 @@ import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 
 /**
  * This class contains JSON utility methods
@@ -29,26 +31,22 @@ public class JsonUtils {
 	}
 
 	public static JsonNode trimValues(JsonNode input) {
-		// TODO Check if node is ObjectNode and handle other cases
-		final ObjectNode out = OBJECT_MAPPER.createObjectNode();
-		final Iterator<Entry<String, JsonNode>> it = input.fields();
-		while (it.hasNext()) {
-			final Entry<String, JsonNode> e = it.next();
-			if (e.getValue().isTextual()) {
-				final String value = e.getValue().asText();
-				if (value != null) {
-					out.put(e.getKey(), value.trim());
-				} else {
-					out.set(e.getKey(), null);
-				}
-			} else if (e.getValue().isContainerNode()) {
-				out.set(e.getKey(), trimValues(e.getValue()));
-			} else {
-				out.set(e.getKey(), e.getValue());
+		if (input.isObject()) {
+			final ObjectNode out = OBJECT_MAPPER.createObjectNode();
+			input.fields().forEachRemaining(e -> out.set(e.getKey(), trimValues(e.getValue())));
+			return out;
+		} else if (input.isArray()) {
+			final ArrayNode out = OBJECT_MAPPER.createArrayNode();
+			input.elements().forEachRemaining(e -> out.add(trimValues(e)));
+			return out;
+		} else if (input.isTextual()) {
+			final String text = input.asText();
+			if (text != null) {
+				return TextNode.valueOf(text.trim());
 			}
 		}
 
-		return out;
+		return input;
 	}
 
 	public static boolean isOwner(JsonNode node, String username) {
