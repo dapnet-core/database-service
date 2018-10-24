@@ -44,7 +44,7 @@ import de.hampager.dapnet.service.database.model.PermissionValue;
 public class UserController extends AbstractController {
 
 	private static final Set<String> KEYS_GET_LIMITED = Set.of("_id", "roles", "enabled");
-	private static final Set<String> VALID_KEYS_UPDATE = Set.of("email", "enabled", "password", "roles");
+	private static final Set<String> VALID_KEYS_UPDATE = Set.of("email", "enabled", "password", "roles", "email_valid");
 	private static final String[] REQUIRED_KEYS_CREATE = { "_id", "password", "email", "roles", "enabled",
 			"email_valid" };
 	private static final String USER_LIST = "user.list";
