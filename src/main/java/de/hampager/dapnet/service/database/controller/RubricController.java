@@ -2,7 +2,6 @@ package de.hampager.dapnet.service.database.controller;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -10,13 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,23 +21,27 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import de.hampager.dapnet.service.database.AppUser;
 import de.hampager.dapnet.service.database.DbConfig;
 import de.hampager.dapnet.service.database.JsonUtils;
 import de.hampager.dapnet.service.database.MissingFieldException;
+import de.hampager.dapnet.service.database.model.PermissionValue;
 
 /**
  * This class implements the rubrics REST endpoint.
  *
- * @author Philipp Thiel, Ralf Wilke
+ * @author Philipp Thiel & Ralf Wilke
  */
+@CrossOrigin
 @RestController
 @RequestMapping("rubrics")
-public class RubricController extends AbstractController {
+class RubricController extends AbstractController {
 
 	private static final Logger logger = LoggerFactory.getLogger(RubricController.class);
 	private static final Set<String> VALID_KEYS_UPDATE = Set.of("number", "description", "label", "transmitter_groups",
@@ -58,7 +57,7 @@ public class RubricController extends AbstractController {
 	private final String namesPath;
 	private final String descriptionPath;
 	private final String labelPath;
-	private final String fullmetaPath;
+	private final String fullMetaPath;
 
 	@Autowired
 	public RubricController(DbConfig config, RestTemplateBuilder builder) {
@@ -66,12 +65,12 @@ public class RubricController extends AbstractController {
 		this.namesPath = basePath.concat("_design/rubrics/_list/names/byId");
 		this.descriptionPath = basePath.concat("_design/rubrics/_list/descriptions/descriptions");
 		this.labelPath = basePath.concat("_design/rubrics/_list/labels/labels");
-		this.fullmetaPath = basePath.concat("_design/rubrics/_list/fullmeta/fullmeta");
+		this.fullMetaPath = basePath.concat("_design/rubrics/_list/fullmeta/fullmeta");
 	}
-/*
+
 	@GetMapping
-	public ResponseEntity<JsonNode> getAll(Authentication authentication, @RequestParam Map<String, String> params) {
-		ensurePermissionValue(authentication, RUBRIC_READ);
+	public ResponseEntity<JsonNode> getAll(@RequestParam Map<String, String> params) {
+		requirePermission(RUBRIC_READ);
 
 		URI path = buildViewPath("byId", params);
 		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
@@ -88,41 +87,40 @@ public class RubricController extends AbstractController {
 	}
 
 	@GetMapping("_names")
-	public ResponseEntity<JsonNode> getNames(Authentication authentication) {
-		ensurePermissionValue(authentication, RUBRIC_LIST);
+	public ResponseEntity<JsonNode> getNames() {
+		requirePermission(RUBRIC_LIST);
 
 		JsonNode in = restTemplate.getForObject(namesPath, JsonNode.class);
 		return ResponseEntity.ok(in);
 	}
 
 	@GetMapping("_descriptions")
-	public ResponseEntity<JsonNode> getDescription(Authentication authentication) {
-		ensurePermissionValue(authentication, RUBRIC_LIST);
+	public ResponseEntity<JsonNode> getDescription() {
+		requirePermission(RUBRIC_LIST);
 
 		JsonNode in = restTemplate.getForObject(descriptionPath, JsonNode.class);
 		return ResponseEntity.ok(in);
 	}
 
 	@GetMapping("_labels")
-	public ResponseEntity<JsonNode> getLabels(Authentication authentication) {
-		ensurePermissionValue(authentication, RUBRIC_LIST);
+	public ResponseEntity<JsonNode> getLabels() {
+		requirePermission(RUBRIC_LIST);
 
 		JsonNode in = restTemplate.getForObject(labelPath, JsonNode.class);
 		return ResponseEntity.ok(in);
 	}
 
 	@GetMapping("_fullmeta")
-	public ResponseEntity<JsonNode> getFullMeta(Authentication authentication) {
-		ensurePermissionValue(authentication, RUBRIC_LIST);
+	public ResponseEntity<JsonNode> getFullMeta() {
+		requirePermission(RUBRIC_LIST);
 
-		JsonNode in = restTemplate.getForObject(fullmetaPath, JsonNode.class);
+		JsonNode in = restTemplate.getForObject(fullMetaPath, JsonNode.class);
 		return ResponseEntity.ok(in);
 	}
 
 	@GetMapping("_view/byNumber")
-	public ResponseEntity<JsonNode> getbyNumber(Authentication authentication,
-			@RequestParam Map<String, String> params) {
-		ensurePermissionValue(authentication, RUBRIC_READ);
+	public ResponseEntity<JsonNode> getbyNumber(@RequestParam Map<String, String> params) {
+		requirePermission(RUBRIC_READ);
 
 		URI path = buildViewPath("byNumber", params);
 		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
@@ -139,9 +137,8 @@ public class RubricController extends AbstractController {
 	}
 
 	@GetMapping("_view/byTransmitter")
-	public ResponseEntity<JsonNode> getbyTransmitter(Authentication authentication,
-			@RequestParam Map<String, String> params) {
-		ensurePermissionValue(authentication, RUBRIC_READ);
+	public ResponseEntity<JsonNode> getbyTransmitter(@RequestParam Map<String, String> params) {
+		requirePermission(RUBRIC_READ);
 
 		URI path = buildViewPath("byTransmitter", params);
 		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
@@ -158,9 +155,8 @@ public class RubricController extends AbstractController {
 	}
 
 	@GetMapping("_view/byTransmitterGroup")
-	public ResponseEntity<JsonNode> getbyTransmitterGroup(Authentication authentication,
-			@RequestParam Map<String, String> params) {
-		ensurePermissionValue(authentication, RUBRIC_READ);
+	public ResponseEntity<JsonNode> getbyTransmitterGroup(@RequestParam Map<String, String> params) {
+		requirePermission(RUBRIC_READ);
 
 		URI path = buildViewPath("byTransmitterGroup", params);
 		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
@@ -177,51 +173,61 @@ public class RubricController extends AbstractController {
 	}
 
 	@GetMapping("{rubricname}")
-	public ResponseEntity<JsonNode> getRubric(Authentication authentication, @PathVariable String rubricname) {
-		checkPermission(authentication, RUBRIC_READ, rubricname);
+	public ResponseEntity<JsonNode> getRubric(@PathVariable String rubricname) {
+		final AppUser appUser = getCurrentUser();
+		final PermissionValue permission = appUser.getPermissions().getOrDefault(RUBRIC_READ, PermissionValue.NONE);
+		if (permission == PermissionValue.NONE || permission == PermissionValue.LIMITED) {
+			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
+		}
 
 		JsonNode in = restTemplate.getForObject(paramPath, JsonNode.class, rubricname);
-		return ResponseEntity.ok(in);
+		if (permission == PermissionValue.ALL
+				|| (permission == PermissionValue.IF_OWNER && JsonUtils.isOwner(in, appUser.getUsername()))) {
+			return ResponseEntity.ok(in);
+		} else {
+			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
+		}
 	}
 
 	@PutMapping
-	public ResponseEntity<JsonNode> putRubric(Authentication authentication, @RequestBody JsonNode rubric) {
-		if ((rubric.has("number")) && (rubric.get("number").isInt()) && (rubric.get("number").intValue() > 95)) {
-			// TODO: Throw error, as rubric number is to high to fit on Skypers
+	public ResponseEntity<JsonNode> putRubric(@RequestBody JsonNode rubric) {
+		if (rubric.has("number")) {
+			final JsonNode rubricNumber = rubric.get("number");
+			if (!rubricNumber.isInt()) {
+				throw new HttpServerErrorException(HttpStatus.BAD_REQUEST, "Field number is not an integer.");
+			} else if (rubricNumber.asInt() > RUBRIC_MAX_NUMBER) {
+				throw new HttpServerErrorException(HttpStatus.BAD_REQUEST,
+						"Rubric number is greater than " + RUBRIC_MAX_NUMBER);
+			}
 		}
 
 		if (rubric.has("_rev")) {
-			return updateRubric(authentication, rubric);
+			return updateRubric(rubric);
 		} else {
-			return createRubric(authentication, rubric);
+			return createRubric(rubric);
 		}
 	}
 
 	// UNTESTED
-	private ResponseEntity<JsonNode> createRubric(Authentication auth, JsonNode rubric) {
-		ensurePermissionValue(auth, RUBRIC_CREATE);
+	private ResponseEntity<JsonNode> createRubric(JsonNode rubric) {
+		requirePermission(RUBRIC_CREATE, PermissionValue.ALL);
+		final AppUser appUser = getCurrentUser();
 
 		try {
-			JsonUtils.validateRequiredFields(rubric, REQUIRED_KEYS_CREATE);
+			JsonUtils.checkRequiredFields(rubric, REQUIRED_KEYS_CREATE);
 		} catch (MissingFieldException ex) {
 			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST, ex.getMessage());
 		}
 
-		ObjectNode modRubric;
-		try {
-			modRubric = (ObjectNode) rubric;
-		} catch (ClassCastException ex) {
-			logger.error("Failed to cast JsonNode to ObjectNode");
-			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST);
-		}
-
-		modRubric.put("_id", modRubric.get("_id").asText().toLowerCase());
+		final ObjectNode modRubric = (ObjectNode) JsonUtils.trimValues(rubric);
+		final String rubricId = modRubric.get("_id").asText().toLowerCase();
+		modRubric.put("_id", rubricId);
 
 		final String ts = Instant.now().toString();
 		modRubric.put("created_on", ts);
-		modRubric.put("created_by", auth.getName());
+		modRubric.put("created_by", appUser.getUsername());
 		modRubric.put("changed_on", ts);
-		modRubric.put("changed_by", auth.getName());
+		modRubric.put("changed_by", appUser.getUsername());
 
 		// UNSTESTED
 		// Check if optional fields for cyclic transmit are present or generate default
@@ -239,20 +245,30 @@ public class RubricController extends AbstractController {
 			modRubric.put("cyclic_transmit_interval", 0);
 		}
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-		HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(modRubric, headers);
-		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, modRubric.get("_id").asText());
+		final ResponseEntity<JsonNode> db = performPut(paramPath, rubricId, modRubric);
+		if (db.getStatusCode() == HttpStatus.CREATED) {
+			final URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}").buildAndExpand(rubricId)
+					.toUri();
+			return ResponseEntity.created(location).body(db.getBody());
+		} else {
+			return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
+		}
 	}
 
 	// UNTESTED
-	private ResponseEntity<JsonNode> updateRubric(Authentication auth, JsonNode rubricUpdate) {
-		checkPermission(auth, RUBRIC_UPDATE, auth.getName());
+	private ResponseEntity<JsonNode> updateRubric(JsonNode rubricUpdate) {
+		final PermissionValue permission = requirePermission(RUBRIC_UPDATE, PermissionValue.ALL,
+				PermissionValue.IF_OWNER);
+		final AppUser appUser = getCurrentUser();
 
-		final String rubricId = rubricUpdate.get("_id").asText();
+		rubricUpdate = JsonUtils.trimValues(rubricUpdate);
 
-		JsonNode oldRubric = restTemplate.getForObject(paramPath, JsonNode.class, rubricId);
+		final String rubricId = rubricUpdate.get("_id").asText().toLowerCase();
+		final JsonNode oldRubric = restTemplate.getForObject(paramPath, JsonNode.class, rubricId);
+		if (permission == PermissionValue.IF_OWNER && !JsonUtils.isOwner(oldRubric, appUser.getUsername())) {
+			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
+		}
+
 		ObjectNode modRubric;
 		try {
 			modRubric = (ObjectNode) oldRubric;
@@ -268,23 +284,30 @@ public class RubricController extends AbstractController {
 		});
 
 		modRubric.put("changed_on", Instant.now().toString());
-		modRubric.put("changed_by", auth.getName());
+		modRubric.put("changed_by", appUser.getUsername());
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-		HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(modRubric, headers);
-		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, rubricId);
+		final ResponseEntity<JsonNode> db = performPut(paramPath, rubricId, modRubric);
+		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
 	// UNTESTED
 	@DeleteMapping("{name}")
-	public ResponseEntity<String> deleteRubric(Authentication authentication, @PathVariable String name,
-			@RequestParam String rev) {
-		checkPermission(authentication, RUBRIC_DELETE, name);
+	public ResponseEntity<JsonNode> deleteRubric(@PathVariable String name, @RequestParam String revision) {
+		final AppUser user = getCurrentUser();
+		final PermissionValue permission = user.getPermissions().getOrDefault(RUBRIC_DELETE, PermissionValue.NONE);
+		boolean canDelete = permission == PermissionValue.ALL;
+		if (permission == PermissionValue.IF_OWNER) {
+			// TODO Handle revision
+			final JsonNode oldRubric = restTemplate.getForObject(paramPath, JsonNode.class, name);
+			canDelete = JsonUtils.isOwner(oldRubric, user.getUsername());
+		}
+
+		if (!canDelete) {
+			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
+		}
 
 		// TODO Delete referenced objects
-		return restTemplate.exchange(paramPath, HttpMethod.DELETE, null, String.class, name);
+		final ResponseEntity<JsonNode> db = performDelete(paramPath, name, revision);
+		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
-	*/
 }
