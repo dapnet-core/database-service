@@ -1,0 +1,6 @@
+root = true
+
+[*.java]
+end_of_line = lf
+indent_style = space
+tab_width = 4

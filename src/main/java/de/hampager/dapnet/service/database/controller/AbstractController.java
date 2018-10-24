@@ -1,17 +1,23 @@
 package de.hampager.dapnet.service.database.controller;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -125,6 +131,7 @@ public abstract class AbstractController {
 		}
 	}
 
+	// TODO Add support for owners array
 	protected PermissionValue requireAdminOrOwner(String permission, String ownerName) {
 		final AppUser user = getCurrentUser();
 		final PermissionValue current = user.getPermissions().getOrDefault(permission, PermissionValue.NONE);
@@ -140,6 +147,24 @@ public abstract class AbstractController {
 		} else {
 			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
 		}
+	}
+
+	protected ResponseEntity<JsonNode> performPut(String path, String pathParam, JsonNode requestObject)
+			throws RestClientException {
+		final HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+		final HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(requestObject, headers);
+		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, pathParam);
+	}
+
+	protected ResponseEntity<JsonNode> performDelete(String path, String pathParam, String revision) {
+		// TODO Handle revision
+		final HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+		final HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(null, headers);
+		return restTemplate.exchange(paramPath, HttpMethod.DELETE, request, JsonNode.class, pathParam);
 	}
 
 }

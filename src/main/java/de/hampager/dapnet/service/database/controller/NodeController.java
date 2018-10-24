@@ -2,7 +2,6 @@ package de.hampager.dapnet.service.database.controller;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -10,13 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -37,6 +33,7 @@ import de.hampager.dapnet.service.database.JsonUtils;
 import de.hampager.dapnet.service.database.MissingFieldException;
 import de.hampager.dapnet.service.database.model.PermissionValue;
 
+@CrossOrigin
 @RestController
 @RequestMapping("nodes")
 public class NodeController extends AbstractController {
@@ -135,25 +132,16 @@ public class NodeController extends AbstractController {
 			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST, ex.getMessage());
 		}
 
-		node = JsonUtils.trimValues(node);
+		final ObjectNode modNode = (ObjectNode) JsonUtils.trimValues(node);
+		final String nodeId = modNode.get("_id").asText().toLowerCase();
+		modNode.put("_id", nodeId);
 
 		// Check if owners field is populated
-		final JsonNode ownersNode = node.get("owners");
+		final JsonNode ownersNode = modNode.get("owners");
 		if (!ownersNode.isArray() || !ownersNode.elements().hasNext()) {
-			final String nodeId = node.get("_id").asText();
 			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST,
 					"Owners list is empty or missing for node id " + nodeId);
 		}
-
-		ObjectNode modNode;
-		try {
-			modNode = (ObjectNode) node;
-		} catch (ClassCastException ex) {
-			logger.error("Failed to cast JsonNode to ObjectNode");
-			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST);
-		}
-
-		modNode.put("_id", modNode.get("_id").asText().toLowerCase());
 
 		final String ts = Instant.now().toString();
 		modNode.put("created_on", ts);
@@ -161,11 +149,14 @@ public class NodeController extends AbstractController {
 		modNode.put("changed_on", ts);
 		modNode.put("changed_by", appUser.getUsername());
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-		HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(modNode, headers);
-		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, modNode.get("_id").asText());
+		final ResponseEntity<JsonNode> db = performPut(paramPath, nodeId, modNode);
+		if (db.getStatusCode() == HttpStatus.CREATED) {
+			final URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}").buildAndExpand(nodeId)
+					.toUri();
+			return ResponseEntity.created(location).body(db.getBody());
+		} else {
+			return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
+		}
 	}
 
 	private ResponseEntity<JsonNode> updateNode(JsonNode nodeUpdate) {
@@ -175,7 +166,7 @@ public class NodeController extends AbstractController {
 
 		nodeUpdate = JsonUtils.trimValues(nodeUpdate);
 
-		final String nodeId = nodeUpdate.get("_id").asText();
+		final String nodeId = nodeUpdate.get("_id").asText().toLowerCase();
 
 		final JsonNode ownersNode = nodeUpdate.get("owners");
 		if (ownersNode != null && (!ownersNode.isArray() || !ownersNode.elements().hasNext())) {
@@ -204,22 +195,18 @@ public class NodeController extends AbstractController {
 		modNode.put("changed_on", Instant.now().toString());
 		modNode.put("changed_by", appUser.getUsername());
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-		HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(modNode, headers);
-		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, nodeId);
+		final ResponseEntity<JsonNode> db = performPut(paramPath, nodeId, modNode);
+		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
 	@DeleteMapping("{nodename}")
-	public ResponseEntity<String> deleteNode(Authentication authentication, @PathVariable String nodename,
-			@RequestParam String rev) {
-		final AppUser user = (AppUser) authentication.getPrincipal();
+	public ResponseEntity<JsonNode> deleteNode(@PathVariable String nodename, @RequestParam String revision) {
+		final AppUser user = getCurrentUser();
 		final PermissionValue permission = user.getPermissions().getOrDefault(NODE_DELETE, PermissionValue.NONE);
 		boolean canDelete = permission == PermissionValue.ALL;
 		if (permission == PermissionValue.IF_OWNER) {
 			final JsonNode oldNode = restTemplate.getForObject(paramPath, JsonNode.class, nodename);
-			canDelete = JsonUtils.isOwner(oldNode, authentication.getName());
+			canDelete = JsonUtils.isOwner(oldNode, user.getUsername());
 		}
 
 		if (!canDelete) {
@@ -227,7 +214,8 @@ public class NodeController extends AbstractController {
 		}
 
 		// TODO Delete referenced objects
-		return restTemplate.exchange(paramPath, HttpMethod.DELETE, null, String.class, nodename);
+		final ResponseEntity<JsonNode> db = performDelete(paramPath, nodename, revision);
+		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
 }

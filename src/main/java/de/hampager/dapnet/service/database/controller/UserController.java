@@ -3,20 +3,15 @@ package de.hampager.dapnet.service.database.controller;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -42,11 +38,11 @@ import de.hampager.dapnet.service.database.model.PermissionValue;
  * 
  * @author Philipp Thiel
  */
+@CrossOrigin
 @RestController
 @RequestMapping("users")
 public class UserController extends AbstractController {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(UserController.class);
 	private static final Set<String> KEYS_GET_LIMITED = Set.of("_id", "roles", "enabled");
 	private static final Set<String> VALID_KEYS_UPDATE = Set.of("email", "enabled", "password", "roles");
 	private static final String[] REQUIRED_KEYS_CREATE = { "_id", "password", "email", "roles", "enabled",
@@ -63,7 +59,7 @@ public class UserController extends AbstractController {
 	public UserController(DbConfig config, RestTemplateBuilder builder) {
 		super(config, builder, "users");
 
-		this.usernamesPath = basePath.concat("_design/users/_list/usernames/_all_docs");
+		this.usernamesPath = basePath.concat("_design/users/_list/usernames/byId");
 	}
 
 	@GetMapping
@@ -135,8 +131,8 @@ public class UserController extends AbstractController {
 		}
 
 		final ObjectNode modUser = (ObjectNode) JsonUtils.trimValues(user);
-
-		modUser.put("_id", modUser.get("_id").asText().toLowerCase());
+		final String userId = modUser.get("_id").asText().toLowerCase();
+		modUser.put("_id", userId);
 
 		final String ts = Instant.now().toString();
 		modUser.put("created_on", ts);
@@ -144,47 +140,49 @@ public class UserController extends AbstractController {
 		modUser.put("changed_on", ts);
 		modUser.put("changed_by", appUser.getUsername());
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-		HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(modUser, headers);
-		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, modUser.get("_id").asText());
+		final ResponseEntity<JsonNode> db = performPut(paramPath, userId, modUser);
+		if (db.getStatusCode() == HttpStatus.CREATED) {
+			final URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}").buildAndExpand(userId)
+					.toUri();
+			return ResponseEntity.created(location).body(db.getBody());
+		} else {
+			return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
+		}
 	}
 
 	private ResponseEntity<JsonNode> updateUser(JsonNode userUpdate) {
 		userUpdate = JsonUtils.trimValues(userUpdate);
 		final AppUser appUser = getCurrentUser();
 
-		final String userId = userUpdate.get("_id").asText();
+		final String userId = userUpdate.get("_id").asText().toLowerCase();
 		if (isOnlyRoleUpdate(userUpdate)) {
 			requireAdminOrOwner(USER_CHANGE_ROLE, userId);
 		} else {
 			requireAdminOrOwner(USER_UPDATE, userId);
 		}
 
-		final ObjectNode oldUser = restTemplate.getForObject(paramPath, ObjectNode.class, userId);
+		final ObjectNode modUser = restTemplate.getForObject(paramPath, ObjectNode.class, userId);
 
 		userUpdate.fields().forEachRemaining(e -> {
 			if (VALID_KEYS_UPDATE.contains(e.getKey())) {
-				oldUser.set(e.getKey(), e.getValue());
+				modUser.set(e.getKey(), e.getValue());
 			}
 		});
 
-		oldUser.put("updated_on", Instant.now().toString());
-		oldUser.put("updated_by", appUser.getUsername());
+		modUser.put("updated_on", Instant.now().toString());
+		modUser.put("updated_by", appUser.getUsername());
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-		HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(oldUser, headers);
-		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, userId);
+		final ResponseEntity<JsonNode> db = performPut(paramPath, userId, modUser);
+		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
 	@DeleteMapping("{username}")
-	public ResponseEntity<String> deleteUser(@PathVariable String username, @RequestParam String rev) {
+	public ResponseEntity<JsonNode> deleteUser(Authentication authentication, @PathVariable String username,
+			@RequestParam String revision) {
 		requireAdminOrOwner(USER_DELETE, username);
 		// TODO Delete referenced objects
-		return restTemplate.exchange(paramPath, HttpMethod.DELETE, null, String.class, username);
+		final ResponseEntity<JsonNode> db = performDelete(paramPath, username, revision);
+		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
 	private static boolean isOnlyRoleUpdate(JsonNode node) {
