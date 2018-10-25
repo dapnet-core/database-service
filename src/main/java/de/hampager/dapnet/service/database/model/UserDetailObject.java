@@ -27,8 +27,8 @@ public class UserDetailObject implements Serializable {
 	@NotNull(groups = CreateObjectChecks.class)
 	@JsonProperty(required = true)
 	private boolean enabled;
-	@JsonProperty(value = "email_valid")
-	private boolean emailValid;
+	@JsonProperty(value = "email_lastchecked")
+	private String email_lastchecked;
 	@NotEmpty(groups = CreateObjectChecks.class)
 	@JsonProperty(required = true)
 	private Set<String> roles;
@@ -57,12 +57,12 @@ public class UserDetailObject implements Serializable {
 		this.enabled = enabled;
 	}
 
-	public boolean isEmailValid() {
-		return emailValid;
+	public String getEmailLastChecked() {
+		return email_lastchecked;
 	}
 
-	public void setEmailValid(boolean emailValid) {
-		this.emailValid = emailValid;
+	public void setEmailLastChecked(String email_lastchecked) {
+		this.email_lastchecked = email_lastchecked;
 	}
 
 	public Set<String> getRoles() {
