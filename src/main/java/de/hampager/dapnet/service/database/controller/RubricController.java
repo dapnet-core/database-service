@@ -45,7 +45,7 @@ class RubricController extends AbstractController {
 
 	private static final Logger logger = LoggerFactory.getLogger(RubricController.class);
 	private static final Set<String> VALID_KEYS_UPDATE = Set.of("number", "description", "label", "transmitter_groups",
-			"transmitters", "cyclic_transmit", "cyclic_transmit_interval", "owners");
+			"transmitters", "cyclic_transmit", "cyclic_transmit_interval", "owners", "messages");
 	private static final String[] REQUIRED_KEYS_CREATE = { "_id", "number", "label", "description",
 			"transmitter_groups", "transmitters", "owners" };
 	private static final String RUBRIC_LIST = "rubric.list";
