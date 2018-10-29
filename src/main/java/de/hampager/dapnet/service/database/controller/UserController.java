@@ -169,8 +169,8 @@ public class UserController extends AbstractController {
 			}
 		});
 
-		modUser.put("updated_on", Instant.now().toString());
-		modUser.put("updated_by", appUser.getUsername());
+		modUser.put("changed_on", Instant.now().toString());
+		modUser.put("changed_by", appUser.getUsername());
 
 		final ResponseEntity<JsonNode> db = performPut(paramPath, userId, modUser);
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
