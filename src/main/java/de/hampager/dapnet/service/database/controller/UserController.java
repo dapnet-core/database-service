@@ -89,14 +89,17 @@ public class UserController extends AbstractController {
 
 	}
 
+	// User names only
 	@GetMapping("_usernames")
 	public ResponseEntity<JsonNode> getUsernames() {
 		requirePermission(USER_LIST, PermissionValue.ALL);
 
 		JsonNode in = restTemplate.getForObject(usernamesPath, JsonNode.class);
 		return ResponseEntity.ok(in);
+
 	}
 
+	// User's details
 	@GetMapping("{username}")
 	public ResponseEntity<JsonNode> getUser(@PathVariable String username) {
 		final PermissionValue permission = requirePermission(USER_READ);
@@ -111,6 +114,20 @@ public class UserController extends AbstractController {
 		return ResponseEntity.ok(in);
 	}
 
+    // User's avatar image
+    @GetMapping("{username}/avatar.jpg")
+    public ResponseEntity<byte[]> getUserAvatar(@PathVariable String username) {
+        /*
+        // Read only own picture
+	    final PermissionValue permission = requirePermission(USER_READ);
+        final AppUser user = getCurrentUser();
+        */
+        requirePermission(USER_LIST, PermissionValue.ALL);
+
+        ResponseEntity<byte[]> db = getAvatar(paramPath.concat("/avatar.jpg"), username);
+        return ResponseEntity.status(db.getStatusCode()).contentType(db.getHeaders().getContentType()).body(db.getBody());
+    }
+
 	@PutMapping
 	public ResponseEntity<JsonNode> putUser(@RequestBody JsonNode user) {
 		if (user.has("_rev")) {
@@ -119,6 +136,18 @@ public class UserController extends AbstractController {
 			return createUser(user);
 		}
 	}
+
+    @PutMapping("{username}/avatar.jpg")
+    public ResponseEntity<JsonNode> putAvatar(@RequestBody byte[] requestimage, @PathVariable String username, @RequestParam("rev") String revision) {
+        final AppUser appUser = getCurrentUser();
+        System.out.println(username);
+
+        final String userId = username.toLowerCase();
+            requireAdminOrOwner(USER_UPDATE, userId);
+
+        final ResponseEntity<JsonNode> db = putAvatar(paramPath.concat("/avatar.jpg"), userId, requestimage, revision);
+        return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
+    }
 
 	private ResponseEntity<JsonNode> createUser(JsonNode user) {
 		requirePermission(USER_CREATE, PermissionValue.ALL);
