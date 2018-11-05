@@ -160,12 +160,13 @@ public abstract class AbstractController {
 	}
 
 	protected ResponseEntity<JsonNode> performDelete(String pathParam, String revision) {
-		// TODO Handle revision
+		// TODO Handle revision, fixed but untested
 		final HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 		final HttpEntity<JsonNode> request = new HttpEntity<>(null, headers);
-		return restTemplate.exchange(paramPath, HttpMethod.DELETE, request, JsonNode.class, pathParam);
+        final String path = paramPath.concat("?rev={revision}");
+		return restTemplate.exchange(path, HttpMethod.DELETE, request, JsonNode.class, pathParam, revision);
 	}
 
 	protected ResponseEntity<byte[]> performGetAvatar(String pathParam) {
@@ -184,4 +185,15 @@ public abstract class AbstractController {
 		final String path = avatarPath.concat("?rev={revision}");
 		return restTemplate.exchange(path, HttpMethod.PUT, request, JsonNode.class, pathParam, revision);
 	}
+
+    protected ResponseEntity<JsonNode> performDeleteAvatar(String pathParam, String revision) {
+        // TODO Handle revision, fixed but untested
+        final HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        final HttpEntity<JsonNode> request = new HttpEntity<>(null, headers);
+        final String path = paramPath.concat("?rev={revision}");
+        return restTemplate.exchange(path, HttpMethod.DELETE, request, JsonNode.class, pathParam, revision);
+    }
+
 }

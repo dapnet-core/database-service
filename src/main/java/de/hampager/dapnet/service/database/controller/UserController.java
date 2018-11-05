@@ -43,8 +43,8 @@ import de.hampager.dapnet.service.database.model.PermissionValue;
 @RequestMapping("users")
 public class UserController extends AbstractController {
 
-	private static final Set<String> KEYS_GET_LIMITED = Set.of("_id", "roles", "enabled");
-	private static final Set<String> VALID_KEYS_UPDATE = Set.of("email", "enabled", "password", "roles",
+	private static final Set<String> KEYS_GET_LIMITED = Set.of("_id", "roles", "enabled", "defaults", "_attachments");
+	private static final Set<String> VALID_KEYS_UPDATE = Set.of("email", "enabled", "password", "roles", "defaults",
 			"email_lastchecked");
 	private static final String[] REQUIRED_KEYS_CREATE = { "_id", "password", "email", "roles", "enabled",
 			"email_lastchecked" };
@@ -212,6 +212,16 @@ public class UserController extends AbstractController {
 		final ResponseEntity<JsonNode> db = performDelete(username, revision);
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
+
+	//TODO: Untested
+    @DeleteMapping("{username}/avatar.jpg")
+    public ResponseEntity<JsonNode> deleteAvatar(Authentication authentication, @PathVariable String username,
+                                               @RequestParam String revision) {
+        requireAdminOrOwner(USER_DELETE, username);
+        // TODO Delete referenced objects
+        final ResponseEntity<JsonNode> db = performDeleteAvatar(username, revision);
+        return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
+    }
 
 	private static boolean isOnlyRoleUpdate(JsonNode node) {
 		final Iterator<String> it = node.fieldNames();
