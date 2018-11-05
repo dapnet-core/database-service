@@ -47,6 +47,7 @@ public abstract class AbstractController {
 	protected final RestTemplate restTemplate;
 	protected final String basePath;
 	protected final String paramPath;
+	protected final String avatarPath;
 	protected final String viewBasePath;
 
 	protected AbstractController(DbConfig config, RestTemplateBuilder builder, String path) {
@@ -59,6 +60,7 @@ public abstract class AbstractController {
 
 		basePath = String.format("%s/%s/", config.getHost(), path);
 		paramPath = basePath.concat("{param}");
+		avatarPath = basePath.concat("/avatar.jpg");
 		viewBasePath = String.format("%s/_design/%s/_view/", basePath, path);
 	}
 
@@ -82,7 +84,7 @@ public abstract class AbstractController {
 	}
 
 	protected URI buildViewPath(String viewName, Map<String, String> requestParams) {
-		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(viewBasePath);
+		final UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(viewBasePath);
 		builder.path(viewName);
 		builder.queryParam("include_docs", "true").queryParam("limit", "20");
 
@@ -167,22 +169,21 @@ public abstract class AbstractController {
 		return restTemplate.exchange(paramPath, HttpMethod.DELETE, request, JsonNode.class, pathParam);
 	}
 
-	protected ResponseEntity<byte[]> getAvatar(String path, String pathParam) {
+	protected ResponseEntity<byte[]> performGetAvatar(String pathParam) {
 		final HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(List.of(MediaType.IMAGE_JPEG));
 		final HttpEntity<byte[]> request = new HttpEntity<>(null, headers);
-		return restTemplate.exchange(path, HttpMethod.GET, request, byte[].class, pathParam);
+		return restTemplate.exchange(avatarPath, HttpMethod.GET, request, byte[].class, pathParam);
 	}
 
-	protected ResponseEntity<JsonNode> putAvatar(String path, String pathParam, byte[] requestObject, String revision)
+	protected ResponseEntity<JsonNode> performPutAvatar(String pathParam, byte[] requestObject, String revision)
 			throws RestClientException {
 		final HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.IMAGE_JPEG);
 		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 		final HttpEntity<byte[]> request = new HttpEntity<>(requestObject, headers);
-		// TODO: Very ugly.. but works with the concat :-(
-		return restTemplate.exchange(path.concat("?rev=").concat(revision), HttpMethod.PUT, request, JsonNode.class,
-				pathParam);
+		final String path = avatarPath.concat("?rev={revision}");
+		return restTemplate.exchange(path, HttpMethod.PUT, request, JsonNode.class, pathParam, revision);
 	}
 
 }

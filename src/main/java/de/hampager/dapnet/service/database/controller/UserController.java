@@ -117,14 +117,14 @@ public class UserController extends AbstractController {
 
 	// User's avatar image
 	@GetMapping("{username}/avatar.jpg")
-	public ResponseEntity<byte[]> getUserAvatar(@PathVariable String username) {
+	public ResponseEntity<byte[]> getAvatar(@PathVariable String username) {
 		/*
 		 * // Read only own picture final PermissionValue permission =
 		 * requirePermission(USER_READ); final AppUser user = getCurrentUser();
 		 */
 		requirePermission(USER_LIST, PermissionValue.ALL);
 
-		ResponseEntity<byte[]> db = getAvatar(paramPath.concat("/avatar.jpg"), username);
+		ResponseEntity<byte[]> db = performGetAvatar(username);
 		return ResponseEntity.status(db.getStatusCode()).contentType(db.getHeaders().getContentType())
 				.body(db.getBody());
 	}
@@ -144,7 +144,7 @@ public class UserController extends AbstractController {
 		final String userId = username.toLowerCase();
 		requireAdminOrOwner(USER_UPDATE, userId);
 
-		final ResponseEntity<JsonNode> db = putAvatar(paramPath.concat("/avatar.jpg"), userId, requestimage, revision);
+		final ResponseEntity<JsonNode> db = performPutAvatar(userId, requestimage, revision);
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
