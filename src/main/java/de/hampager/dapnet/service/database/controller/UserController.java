@@ -144,8 +144,13 @@ public class UserController extends AbstractController {
 		final String userId = username.toLowerCase();
 		requireAdminOrOwner(USER_UPDATE, userId);
 
-		final ResponseEntity<JsonNode> db = performPutAvatar(userId, requestimage, revision);
-		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
+		final JsonNode in = restTemplate.getForObject(paramPath, JsonNode.class, userId);
+		if (in.has("_id") || userId.equalsIgnoreCase(in.get("_id").asText())) {
+			final ResponseEntity<JsonNode> db = performPutAvatar(userId, requestimage, revision);
+			return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
+		} else {
+			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST, "Invalid username.");
+		}
 	}
 
 	private ResponseEntity<JsonNode> createUser(JsonNode user) {
@@ -213,15 +218,15 @@ public class UserController extends AbstractController {
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
-	//TODO: Untested
-    @DeleteMapping("{username}/avatar.jpg")
-    public ResponseEntity<JsonNode> deleteAvatar(Authentication authentication, @PathVariable String username,
-                                               @RequestParam String revision) {
-        requireAdminOrOwner(USER_DELETE, username);
-        // TODO Delete referenced objects
-        final ResponseEntity<JsonNode> db = performDeleteAvatar(username, revision);
-        return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
-    }
+	// TODO: Untested
+	@DeleteMapping("{username}/avatar.jpg")
+	public ResponseEntity<JsonNode> deleteAvatar(Authentication authentication, @PathVariable String username,
+			@RequestParam String revision) {
+		requireAdminOrOwner(USER_DELETE, username);
+		// TODO Delete referenced objects
+		final ResponseEntity<JsonNode> db = performDeleteAvatar(username, revision);
+		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
+	}
 
 	private static boolean isOnlyRoleUpdate(JsonNode node) {
 		final Iterator<String> it = node.fieldNames();
