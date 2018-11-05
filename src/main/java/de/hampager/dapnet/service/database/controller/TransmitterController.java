@@ -109,7 +109,7 @@ class TransmitterController extends AbstractController {
 		modTransmitter.put("changed_on", ts);
 		modTransmitter.put("changed_by", appUser.getUsername());
 
-		final ResponseEntity<JsonNode> db = performPut(paramPath, transmitterId, modTransmitter);
+		final ResponseEntity<JsonNode> db = performPut(transmitterId, modTransmitter);
 		if (db.getStatusCode() == HttpStatus.CREATED) {
 			final URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}")
 					.buildAndExpand(transmitterId).toUri();
@@ -150,7 +150,7 @@ class TransmitterController extends AbstractController {
 		modTransmitter.put("changed_on", Instant.now().toString());
 		modTransmitter.put("changed_by", appUser.getUsername());
 
-		final ResponseEntity<JsonNode> db = performPut(paramPath, transmitterId, modTransmitter);
+		final ResponseEntity<JsonNode> db = performPut(transmitterId, modTransmitter);
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
@@ -171,7 +171,7 @@ class TransmitterController extends AbstractController {
 		}
 
 		// TODO Delete referenced objects
-		final ResponseEntity<JsonNode> db = performDelete(paramPath, name, revision);
+		final ResponseEntity<JsonNode> db = performDelete(name, revision);
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 }

@@ -177,7 +177,7 @@ class SubscriberController extends AbstractController {
 		modSubscriber.put("changed_on", ts);
 		modSubscriber.put("changed_by", appUser.getUsername());
 
-		final ResponseEntity<JsonNode> db = performPut(paramPath, subsriberId, modSubscriber);
+		final ResponseEntity<JsonNode> db = performPut(subsriberId, modSubscriber);
 		if (db.getStatusCode() == HttpStatus.CREATED) {
 			final URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}")
 					.buildAndExpand(subsriberId).toUri();
@@ -218,7 +218,7 @@ class SubscriberController extends AbstractController {
 		modSubscriber.put("changed_on", Instant.now().toString());
 		modSubscriber.put("changed_by", appUser.getUsername());
 
-		final ResponseEntity<JsonNode> db = performPut(paramPath, subscriberId, modSubscriber);
+		final ResponseEntity<JsonNode> db = performPut(subscriberId, modSubscriber);
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
@@ -240,7 +240,7 @@ class SubscriberController extends AbstractController {
 		}
 
 		// TODO Delete referenced objects
-		final ResponseEntity<JsonNode> db = performDelete(paramPath, name, revision);
+		final ResponseEntity<JsonNode> db = performDelete(name, revision);
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 }

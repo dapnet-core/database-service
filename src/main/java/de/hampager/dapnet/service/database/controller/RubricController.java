@@ -245,7 +245,7 @@ class RubricController extends AbstractController {
 			modRubric.put("cyclic_transmit_interval", 0);
 		}
 
-		final ResponseEntity<JsonNode> db = performPut(paramPath, rubricId, modRubric);
+		final ResponseEntity<JsonNode> db = performPut(rubricId, modRubric);
 		if (db.getStatusCode() == HttpStatus.CREATED) {
 			final URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}").buildAndExpand(rubricId)
 					.toUri();
@@ -286,7 +286,7 @@ class RubricController extends AbstractController {
 		modRubric.put("changed_on", Instant.now().toString());
 		modRubric.put("changed_by", appUser.getUsername());
 
-		final ResponseEntity<JsonNode> db = performPut(paramPath, rubricId, modRubric);
+		final ResponseEntity<JsonNode> db = performPut(rubricId, modRubric);
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
@@ -307,7 +307,7 @@ class RubricController extends AbstractController {
 		}
 
 		// TODO Delete referenced objects
-		final ResponseEntity<JsonNode> db = performDelete(paramPath, name, revision);
+		final ResponseEntity<JsonNode> db = performDelete(name, revision);
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 }

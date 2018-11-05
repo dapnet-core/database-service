@@ -168,7 +168,7 @@ public class UserController extends AbstractController {
 		modUser.put("changed_on", ts);
 		modUser.put("changed_by", appUser.getUsername());
 
-		final ResponseEntity<JsonNode> db = performPut(paramPath, userId, modUser);
+		final ResponseEntity<JsonNode> db = performPut(userId, modUser);
 		if (db.getStatusCode() == HttpStatus.CREATED) {
 			final URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}").buildAndExpand(userId)
 					.toUri();
@@ -200,7 +200,7 @@ public class UserController extends AbstractController {
 		modUser.put("changed_on", Instant.now().toString());
 		modUser.put("changed_by", appUser.getUsername());
 
-		final ResponseEntity<JsonNode> db = performPut(paramPath, userId, modUser);
+		final ResponseEntity<JsonNode> db = performPut(userId, modUser);
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
@@ -209,7 +209,7 @@ public class UserController extends AbstractController {
 			@RequestParam String revision) {
 		requireAdminOrOwner(USER_DELETE, username);
 		// TODO Delete referenced objects
-		final ResponseEntity<JsonNode> db = performDelete(paramPath, username, revision);
+		final ResponseEntity<JsonNode> db = performDelete(username, revision);
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 

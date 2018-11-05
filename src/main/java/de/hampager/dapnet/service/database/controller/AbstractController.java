@@ -151,8 +151,7 @@ public abstract class AbstractController {
 		}
 	}
 
-	protected ResponseEntity<JsonNode> performPut(String path, String pathParam, JsonNode requestObject)
-			throws RestClientException {
+	protected ResponseEntity<JsonNode> performPut(String pathParam, JsonNode requestObject) throws RestClientException {
 		final HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
@@ -160,7 +159,7 @@ public abstract class AbstractController {
 		return restTemplate.exchange(paramPath, HttpMethod.PUT, request, JsonNode.class, pathParam);
 	}
 
-	protected ResponseEntity<JsonNode> performDelete(String path, String pathParam, String revision) {
+	protected ResponseEntity<JsonNode> performDelete(String pathParam, String revision) {
 		// TODO Handle revision
 		final HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
