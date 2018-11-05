@@ -60,7 +60,7 @@ public abstract class AbstractController {
 
 		basePath = String.format("%s/%s/", config.getHost(), path);
 		paramPath = basePath.concat("{param}");
-		avatarPath = basePath.concat("/avatar.jpg");
+		avatarPath = basePath.concat("{param}/avatar.jpg");
 		viewBasePath = String.format("%s/_design/%s/_view/", basePath, path);
 	}
 
@@ -185,5 +185,4 @@ public abstract class AbstractController {
 		final String path = avatarPath.concat("?rev={revision}");
 		return restTemplate.exchange(path, HttpMethod.PUT, request, JsonNode.class, pathParam, revision);
 	}
-
 }
