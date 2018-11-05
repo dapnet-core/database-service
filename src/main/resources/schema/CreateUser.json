@@ -1,0 +1,40 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"$id": "https://hampager.de/schema/db/CreateUser.json",
+	"title": "CreateUser",
+	"description": "A DAPNET user account creation request.",
+	"type": "object",
+	"required": [
+		"_id",
+		"password",
+		"email",
+		"roles",
+		"enabled",
+		"email_lastchecked"
+	],
+	"properties": {
+		"_id": {
+			"type": "string",
+			"pattern": "^[A-Za-z0-9\\.\\-_]{3,40}$"
+		},
+		"password": {
+			"type": "string"
+		},
+		"email": {
+			"type": "string"
+		},
+		"roles": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			},
+			"uniqueItems": true
+		},
+		"enabled": {
+			"type": "boolean"
+		},
+		"email_lastchecked": {
+			"type": "string"
+		}
+	}
+}

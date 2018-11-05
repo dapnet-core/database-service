@@ -44,7 +44,8 @@ import de.hampager.dapnet.service.database.model.PermissionValue;
 public class UserController extends AbstractController {
 
 	private static final Set<String> KEYS_GET_LIMITED = Set.of("_id", "roles", "enabled");
-	private static final Set<String> VALID_KEYS_UPDATE = Set.of("email", "enabled", "password", "roles", "email_lastchecked");
+	private static final Set<String> VALID_KEYS_UPDATE = Set.of("email", "enabled", "password", "roles",
+			"email_lastchecked");
 	private static final String[] REQUIRED_KEYS_CREATE = { "_id", "password", "email", "roles", "enabled",
 			"email_lastchecked" };
 	private static final String USER_LIST = "user.list";
@@ -114,19 +115,19 @@ public class UserController extends AbstractController {
 		return ResponseEntity.ok(in);
 	}
 
-    // User's avatar image
-    @GetMapping("{username}/avatar.jpg")
-    public ResponseEntity<byte[]> getUserAvatar(@PathVariable String username) {
-        /*
-        // Read only own picture
-	    final PermissionValue permission = requirePermission(USER_READ);
-        final AppUser user = getCurrentUser();
-        */
-        requirePermission(USER_LIST, PermissionValue.ALL);
+	// User's avatar image
+	@GetMapping("{username}/avatar.jpg")
+	public ResponseEntity<byte[]> getUserAvatar(@PathVariable String username) {
+		/*
+		 * // Read only own picture final PermissionValue permission =
+		 * requirePermission(USER_READ); final AppUser user = getCurrentUser();
+		 */
+		requirePermission(USER_LIST, PermissionValue.ALL);
 
-        ResponseEntity<byte[]> db = getAvatar(paramPath.concat("/avatar.jpg"), username);
-        return ResponseEntity.status(db.getStatusCode()).contentType(db.getHeaders().getContentType()).body(db.getBody());
-    }
+		ResponseEntity<byte[]> db = getAvatar(paramPath.concat("/avatar.jpg"), username);
+		return ResponseEntity.status(db.getStatusCode()).contentType(db.getHeaders().getContentType())
+				.body(db.getBody());
+	}
 
 	@PutMapping
 	public ResponseEntity<JsonNode> putUser(@RequestBody JsonNode user) {
@@ -137,17 +138,15 @@ public class UserController extends AbstractController {
 		}
 	}
 
-    @PutMapping("{username}/avatar.jpg")
-    public ResponseEntity<JsonNode> putAvatar(@RequestBody byte[] requestimage, @PathVariable String username, @RequestParam("rev") String revision) {
-        final AppUser appUser = getCurrentUser();
-        System.out.println(username);
+	@PutMapping("{username}/avatar.jpg")
+	public ResponseEntity<JsonNode> putAvatar(@RequestBody byte[] requestimage, @PathVariable String username,
+			@RequestParam("rev") String revision) {
+		final String userId = username.toLowerCase();
+		requireAdminOrOwner(USER_UPDATE, userId);
 
-        final String userId = username.toLowerCase();
-            requireAdminOrOwner(USER_UPDATE, userId);
-
-        final ResponseEntity<JsonNode> db = putAvatar(paramPath.concat("/avatar.jpg"), userId, requestimage, revision);
-        return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
-    }
+		final ResponseEntity<JsonNode> db = putAvatar(paramPath.concat("/avatar.jpg"), userId, requestimage, revision);
+		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
+	}
 
 	private ResponseEntity<JsonNode> createUser(JsonNode user) {
 		requirePermission(USER_CREATE, PermissionValue.ALL);

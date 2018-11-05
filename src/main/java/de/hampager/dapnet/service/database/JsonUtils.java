@@ -1,5 +1,6 @@
 package de.hampager.dapnet.service.database;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -9,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.networknt.schema.ValidationMessage;
 
 /**
  * This class contains JSON utility methods
@@ -18,6 +20,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
 public class JsonUtils {
 
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+	private static final JsonSchemaManager VALIDATOR = new JsonSchemaManager();
 
 	private JsonUtils() {
 	}
@@ -73,6 +76,10 @@ public class JsonUtils {
 				it.remove();
 			}
 		}
+	}
+
+	public static Set<ValidationMessage> validate(JsonNode input, String schemaPath) throws IOException {
+		return VALIDATOR.validate(input, schemaPath);
 	}
 
 }
