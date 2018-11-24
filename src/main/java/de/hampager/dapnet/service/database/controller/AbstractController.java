@@ -43,7 +43,9 @@ public abstract class AbstractController {
 	@Autowired
 	private AuthenticationFacade authFacade;
 
-	private static final Set<String> VALID_PARAMS = Set.of("limit", "skip", "startkey", "endkey", "key");
+	private static final Set<String> VALID_PARAMS = Set.of("limit", "skip", "startkey", "endkey", "key",
+			"keys", "descending", "group", "group_level", "reduce", "include_docs", "attachments");
+
 	protected final RestTemplate restTemplate;
 	protected final String basePath;
 	protected final String paramPath;
