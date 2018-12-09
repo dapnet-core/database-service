@@ -4,6 +4,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.Set;
 
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,7 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import de.hampager.dapnet.service.database.AppUser;
@@ -153,7 +155,31 @@ class TransmitterController extends AbstractController {
 		final ResponseEntity<JsonNode> db = performPut(transmitterId, modTransmitter);
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
+    // Get all documents that have the current user name in the owners array
+    @GetMapping("_my")
+    public ResponseEntity<JsonNode> get() {
+        requirePermission(TRANSMITTER_READ);
 
+        URI path = buildOwnersViewPath();
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        // Not sure if this works always, to let's count the rows manually
+        //out.put("total_rows",
+        //        in.get("total_rows").asInt() - in.get("offset").asInt()
+        //);
+
+        Integer total_rows = 0;
+
+        ArrayNode rows = out.putArray("rows");
+        for (JsonNode n : in.get("rows")) {
+            JsonNode doc = n.get("doc");
+            rows.add(doc);
+            total_rows++;
+        }
+        out.put("total_rows", total_rows);
+        return ResponseEntity.ok(out);
+    }
 	// UNTESTED
 	@DeleteMapping("{name}")
 	public ResponseEntity<JsonNode> deleteTransmitter(@PathVariable String name, @RequestParam String revision) {

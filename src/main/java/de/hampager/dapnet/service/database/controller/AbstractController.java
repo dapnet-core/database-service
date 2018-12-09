@@ -90,6 +90,7 @@ public abstract class AbstractController {
 		builder.path(viewName);
 		builder.queryParam("include_docs", "true").queryParam("limit", "20");
 
+		// If the key startswith is present, remove it and replace it by the CouchDB syntax of start and endkey
 		if (requestParams.containsKey("startswith")) {
 			String value = requestParams.remove("startswith");
 			if (value != null) {
@@ -98,6 +99,8 @@ public abstract class AbstractController {
 			}
 		}
 
+		//For the rest of the params handed to this method, check if they are allowed and add them to the
+        // query
 		requestParams.forEach((p, v) -> {
 			if (VALID_PARAMS.contains(p)) {
 				builder.replaceQueryParam(p, v);
@@ -106,6 +109,27 @@ public abstract class AbstractController {
 
 		return builder.build().toUri();
 	}
+
+	protected URI buildOwnersViewPath() {
+        final UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(viewBasePath);
+        builder.path("byOwners");
+
+        // Add necessary parameters in a static way
+        builder.queryParam("include_docs", "true")
+                .queryParam("reduce", "false");
+
+        // Get current user
+        final AppUser user = getCurrentUser();
+        final String currentUserName = user.getUsername();
+
+        // Add current username to query
+        if (currentUserName != null) {
+            builder.queryParam("startkey", String.format("\"%s\"", currentUserName));
+            builder.queryParam("endkey", String.format("\"%s\\ufff0\"", currentUserName.replaceAll("\"", "")));
+        }
+
+        return builder.build().toUri();
+    }
 
 	protected AppUser getCurrentUser() {
 		final Authentication auth = authFacade.getAuthentication();
