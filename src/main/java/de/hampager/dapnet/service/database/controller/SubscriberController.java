@@ -132,10 +132,10 @@ class SubscriberController extends AbstractController {
 
 	// Get all documents that have the current user name in the owners array
     @GetMapping("_my")
-    public ResponseEntity<JsonNode> get() {
+    public ResponseEntity<JsonNode> getMy() {
         requirePermission(SUBSCRIBER_READ);
 
-        URI path = buildOwnersViewPath();
+        URI path = buildOwnersViewPath(false);
         JsonNode in = restTemplate.getForObject(path, JsonNode.class);
         ObjectNode out = mapper.createObjectNode();
 
@@ -156,6 +156,19 @@ class SubscriberController extends AbstractController {
         return ResponseEntity.ok(out);
 	}
 
+	@GetMapping("_my_count")
+    public ResponseEntity<JsonNode> getMyCount() {
+        requirePermission(SUBSCRIBER_READ);
+
+        URI path = buildOwnersViewPath(true);
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        JsonNode n = in.get("rows");
+        Integer total_items = in.get("rows").get(0).get("value").asInt();
+        out.put("count", total_items);
+        return ResponseEntity.ok(out);
+    }
     @GetMapping("{name}")
 	public ResponseEntity<JsonNode> getSubscriber(@PathVariable String subscriber) {
 		final AppUser appUser = getCurrentUser();

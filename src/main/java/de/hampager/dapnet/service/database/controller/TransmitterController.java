@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Set;
 
 
+import com.fasterxml.jackson.databind.util.JSONPObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -157,10 +158,10 @@ class TransmitterController extends AbstractController {
 	}
     // Get all documents that have the current user name in the owners array
     @GetMapping("_my")
-    public ResponseEntity<JsonNode> get() {
+    public ResponseEntity<JsonNode> getMy() {
         requirePermission(TRANSMITTER_READ);
 
-        URI path = buildOwnersViewPath();
+        URI path = buildOwnersViewPath(false);
         JsonNode in = restTemplate.getForObject(path, JsonNode.class);
         ObjectNode out = mapper.createObjectNode();
 
@@ -180,6 +181,21 @@ class TransmitterController extends AbstractController {
         out.put("total_rows", total_rows);
         return ResponseEntity.ok(out);
     }
+
+    @GetMapping("_my_count")
+    public ResponseEntity<JsonNode> getMyCount() {
+        requirePermission(TRANSMITTER_READ);
+
+        URI path = buildOwnersViewPath(true);
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        JsonNode n = in.get("rows");
+        Integer total_items = in.get("rows").get(0).get("value").asInt();
+        out.put("count", total_items);
+        return ResponseEntity.ok(out);
+    }
+
 	// UNTESTED
 	@DeleteMapping("{name}")
 	public ResponseEntity<JsonNode> deleteTransmitter(@PathVariable String name, @RequestParam String revision) {

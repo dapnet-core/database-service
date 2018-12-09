@@ -110,13 +110,15 @@ public abstract class AbstractController {
 		return builder.build().toUri();
 	}
 
-	protected URI buildOwnersViewPath() {
+	protected URI buildOwnersViewPath(boolean onlyCount) {
         final UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(viewBasePath);
         builder.path("byOwners");
 
-        // Add necessary parameters in a static way
-        builder.queryParam("include_docs", "true")
-                .queryParam("reduce", "false");
+        if (!onlyCount) {
+            // Add necessary parameters in a static way
+            builder.queryParam("include_docs", "true")
+                    .queryParam("reduce", "false");
+        }
 
         // Get current user
         final AppUser user = getCurrentUser();
