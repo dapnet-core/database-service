@@ -193,14 +193,14 @@ class SubscriberController extends AbstractController {
     }
 
     @GetMapping("{name}")
-	public ResponseEntity<JsonNode> getSubscriber(@PathVariable String subscriber) {
+	public ResponseEntity<JsonNode> getSubscriber(@PathVariable String name) {
 		final AppUser appUser = getCurrentUser();
 		final PermissionValue permission = appUser.getPermissions().getOrDefault(SUBSCRIBER_READ, PermissionValue.NONE);
 		if (permission == PermissionValue.NONE || permission == PermissionValue.LIMITED) {
 			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
 		}
 
-		JsonNode in = restTemplate.getForObject(paramPath, JsonNode.class, subscriber);
+		JsonNode in = restTemplate.getForObject(paramPath, JsonNode.class, name);
 		if (permission == PermissionValue.ALL
 				|| (permission == PermissionValue.IF_OWNER && JsonUtils.isOwner(in, appUser.getUsername()))) {
 			return ResponseEntity.ok(in);
