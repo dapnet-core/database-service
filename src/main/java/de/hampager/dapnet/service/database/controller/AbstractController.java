@@ -86,21 +86,26 @@ public abstract class AbstractController {
 	}
 
 	protected URI buildViewPath(String viewName, Map<String, String> requestParams) {
-		final UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(viewBasePath);
-		builder.path(viewName);
-		builder.queryParam("include_docs", "true").queryParam("limit", "20");
+            final UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(viewBasePath);
+            builder.path(viewName);
+            builder.queryParam("include_docs", "true").queryParam("limit", "20").queryParam("reduce", "false");
 
-		// If the key startswith is present, remove it and replace it by the CouchDB syntax of start and endkey
-		if (requestParams.containsKey("startswith")) {
-			String value = requestParams.remove("startswith");
-			if (value != null) {
-				requestParams.put("startkey", value);
-				requestParams.put("endkey", String.format("\"%s\\ufff0\"", value.replaceAll("\"", "")));
-			}
-		}
+            // If the key startswith is present, remove it and replace it by the CouchDB syntax of start and endkey
+            if (requestParams.containsKey("startswith")) {
+                String value = requestParams.remove("startswith");
+                if (value != null) {
+                    if (requestParams.containsKey("descending") && requestParams.get("descending").equalsIgnoreCase("true")) {
+                        requestParams.put("endkey", value);
+                        requestParams.put("startkey", String.format("\"%s\\ufff0\"", value.replaceAll("\"", "")));
+                    } else {
+                        requestParams.put("startkey", value);
+                        requestParams.put("endkey", String.format("\"%s\\ufff0\"", value.replaceAll("\"", "")));
+                    }
+                }
+            }
 
 		//For the rest of the params handed to this method, check if they are allowed and add them to the
-        // query
+		// query
 		requestParams.forEach((p, v) -> {
 			if (VALID_PARAMS.contains(p)) {
 				builder.replaceQueryParam(p, v);
@@ -110,28 +115,35 @@ public abstract class AbstractController {
 		return builder.build().toUri();
 	}
 
-	protected URI buildOwnersViewPath(boolean onlyCount) {
+    protected URI buildCountViewPath() {
         final UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(viewBasePath);
-        builder.path("byOwners");
-
-        if (!onlyCount) {
-            // Add necessary parameters in a static way
-            builder.queryParam("include_docs", "true")
-                    .queryParam("reduce", "false");
-        }
-
-        // Get current user
-        final AppUser user = getCurrentUser();
-        final String currentUserName = user.getUsername();
-
-        // Add current username to query
-        if (currentUserName != null) {
-            builder.queryParam("startkey", String.format("\"%s\"", currentUserName));
-            builder.queryParam("endkey", String.format("\"%s\\ufff0\"", currentUserName.replaceAll("\"", "")));
-        }
-
+        builder.path("byId");
         return builder.build().toUri();
     }
+
+
+	protected URI buildOwnersViewPath(boolean onlyCount) {
+		final UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(viewBasePath);
+		builder.path("byOwners");
+
+		if (!onlyCount) {
+			// Add necessary parameters in a static way
+			builder.queryParam("include_docs", "true")
+					.queryParam("reduce", "false");
+		}
+
+		// Get current user
+		final AppUser user = getCurrentUser();
+		final String currentUserName = user.getUsername();
+
+		// Add current username to query
+		if (currentUserName != null) {
+			builder.queryParam("startkey", String.format("\"%s\"", currentUserName));
+			builder.queryParam("endkey", String.format("\"%s\\ufff0\"", currentUserName.replaceAll("\"", "")));
+		}
+
+		return builder.build().toUri();
+	}
 
 	protected AppUser getCurrentUser() {
 		final Authentication auth = authFacade.getAuthentication();

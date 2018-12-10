@@ -173,6 +173,25 @@ class SubscriberController extends AbstractController {
         out.put("count", total_items);
         return ResponseEntity.ok(out);
     }
+
+    @GetMapping("_count")
+    public ResponseEntity<JsonNode> getCount() {
+        requirePermission(SUBSCRIBER_READ);
+
+        URI path = buildCountViewPath();
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        Integer total_items = 0;
+        if (in.has("rows") &&
+                in.get("rows").has(0) &&
+                in.get("rows").get(0).has("value")) {
+            total_items = in.get("rows").get(0).get("value").asInt();
+        }
+        out.put("count", total_items);
+        return ResponseEntity.ok(out);
+    }
+
     @GetMapping("{name}")
 	public ResponseEntity<JsonNode> getSubscriber(@PathVariable String subscriber) {
 		final AppUser appUser = getCurrentUser();

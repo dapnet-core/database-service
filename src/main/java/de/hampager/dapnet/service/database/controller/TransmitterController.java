@@ -200,6 +200,24 @@ class TransmitterController extends AbstractController {
         return ResponseEntity.ok(out);
     }
 
+    @GetMapping("_count")
+    public ResponseEntity<JsonNode> getCount() {
+        requirePermission(TRANSMITTER_READ);
+
+        URI path = buildCountViewPath();
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        Integer total_items = 0;
+        if (in.has("rows") &&
+                in.get("rows").has(0) &&
+                in.get("rows").get(0).has("value")) {
+            total_items = in.get("rows").get(0).get("value").asInt();
+        }
+        out.put("count", total_items);
+        return ResponseEntity.ok(out);
+    }
+
 	// UNTESTED
 	@DeleteMapping("{name}")
 	public ResponseEntity<JsonNode> deleteTransmitter(@PathVariable String name, @RequestParam String revision) {
