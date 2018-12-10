@@ -62,9 +62,9 @@ class SubscriberController extends AbstractController {
 	@Autowired
 	public SubscriberController(DbConfig config, RestTemplateBuilder builder) {
 		super(config, builder, "subscribers");
-		this.namesPath = basePath.concat("_design/subscribers/_list/names/byId");
+		this.namesPath = basePath.concat("_design/subscribers/_list/names/byId?reduce=false");
 		this.groupsPath = basePath.concat("_design/subscribers/_list/groups/byGroup?group_level=5");
-		this.descriptionPath = basePath.concat("_design/subscribers/_list/descriptions/descriptions");
+		this.descriptionPath = basePath.concat("_design/subscribers/_list/descriptions/descriptions?reduce=false");
 	}
 
 	@GetMapping

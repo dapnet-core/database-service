@@ -62,7 +62,7 @@ class TransmitterController extends AbstractController {
 	@Autowired
 	public TransmitterController(DbConfig config, RestTemplateBuilder builder) {
 		super(config, builder, "transmitters");
-		this.namesPath = basePath.concat("_design/transmitters/_list/names/byId");
+		this.namesPath = basePath.concat("_design/transmitters/_list/names/byId?reduce=false");
 		this.groupsPath = basePath.concat("_design/transmitters/_list/groups/byGroup?group_level=5");
 	}
 
