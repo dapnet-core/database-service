@@ -230,8 +230,8 @@ class SubscriberController extends AbstractController {
 		}
 
 		final ObjectNode modSubscriber = (ObjectNode) JsonUtils.trimValues(subscriber);
-		final String subsriberId = modSubscriber.get("_id").asText().toLowerCase();
-		modSubscriber.put("_id", subsriberId);
+		final String subscriberId = modSubscriber.get("_id").asText().toLowerCase();
+		modSubscriber.put("_id", subscriberId);
 
 		final String ts = Instant.now().toString();
 		modSubscriber.put("created_on", ts);
@@ -239,10 +239,10 @@ class SubscriberController extends AbstractController {
 		modSubscriber.put("changed_on", ts);
 		modSubscriber.put("changed_by", appUser.getUsername());
 
-		final ResponseEntity<JsonNode> db = performPut(subsriberId, modSubscriber);
+		final ResponseEntity<JsonNode> db = performPut(subscriberId, modSubscriber);
 		if (db.getStatusCode() == HttpStatus.CREATED) {
 			final URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}")
-					.buildAndExpand(subsriberId).toUri();
+					.buildAndExpand(subscriberId).toUri();
 			return ResponseEntity.created(location).body(db.getBody());
 		} else {
 			return ResponseEntity.status(db.getStatusCode()).body(db.getBody());

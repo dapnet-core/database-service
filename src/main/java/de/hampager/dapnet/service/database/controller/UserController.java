@@ -175,8 +175,8 @@ public class UserController extends AbstractController {
 
 		final ResponseEntity<JsonNode> db = performPut(userId, modUser);
 		if (db.getStatusCode() == HttpStatus.CREATED) {
-			final URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}").buildAndExpand(userId)
-					.toUri();
+			final URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}")
+                    .buildAndExpand(userId).toUri();
 			return ResponseEntity.created(location).body(db.getBody());
 		} else {
 			return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
