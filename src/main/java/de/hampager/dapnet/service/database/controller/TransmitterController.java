@@ -2,6 +2,7 @@ package de.hampager.dapnet.service.database.controller;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -66,7 +67,25 @@ class TransmitterController extends AbstractController {
 		this.groupsPath = basePath.concat("_design/transmitters/_list/groups/byGroup?group_level=5");
 	}
 
-	@GetMapping("_names")
+    @GetMapping
+    public ResponseEntity<JsonNode> getAll(@RequestParam Map<String, String> params) {
+        requirePermission(TRANSMITTER_READ);
+
+        URI path = buildViewPath("byId", params);
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        out.put("total_rows", in.get("total_rows").asInt());
+        ArrayNode rows = out.putArray("rows");
+        for (JsonNode n : in.get("rows")) {
+            JsonNode doc = n.get("doc");
+            rows.add(doc);
+        }
+
+        return ResponseEntity.ok(out);
+    }
+
+    @GetMapping("_names")
 	public ResponseEntity<JsonNode> getNames() {
 		requirePermission(TRANSMITTER_LIST);
 
@@ -83,7 +102,7 @@ class TransmitterController extends AbstractController {
 	}
 
     @GetMapping("{name}")
-    public ResponseEntity<JsonNode> getSubscriber(@PathVariable String name) {
+    public ResponseEntity<JsonNode> getTransmitter(@PathVariable String name) {
         final AppUser appUser = getCurrentUser();
         final PermissionValue permission = appUser.getPermissions().getOrDefault(TRANSMITTER_READ, PermissionValue.NONE);
         if (permission == PermissionValue.NONE || permission == PermissionValue.LIMITED) {
@@ -200,6 +219,7 @@ class TransmitterController extends AbstractController {
         return ResponseEntity.ok(out);
     }
 
+    // Get the number of documents that have the current user name in the owners array
     @GetMapping("_my_count")
     public ResponseEntity<JsonNode> getMyCount() {
         requirePermission(TRANSMITTER_READ);
@@ -218,6 +238,7 @@ class TransmitterController extends AbstractController {
         return ResponseEntity.ok(out);
     }
 
+    // Get the number of all documents in this database
     @GetMapping("_count")
     public ResponseEntity<JsonNode> getCount() {
         requirePermission(TRANSMITTER_READ);
