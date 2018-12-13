@@ -100,6 +100,25 @@ public class UserController extends AbstractController {
 
 	}
 
+    // Get the number of all documents in this database
+    @GetMapping("_count")
+    public ResponseEntity<JsonNode> getCount() {
+        requirePermission(USER_READ);
+
+        URI path = buildCountViewPath();
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        Integer total_items = 0;
+        if (in.has("rows") &&
+                in.get("rows").has(0) &&
+                in.get("rows").get(0).has("value")) {
+            total_items = in.get("rows").get(0).get("value").asInt();
+        }
+        out.put("count", total_items);
+        return ResponseEntity.ok(out);
+    }
+
 	// User's details
 	@GetMapping("{username}")
 	public ResponseEntity<JsonNode> getUser(@PathVariable String username) {
