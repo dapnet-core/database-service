@@ -155,7 +155,7 @@ class SubscriberController extends AbstractController {
         out.put("total_rows", total_rows);
         return ResponseEntity.ok(out);
 	}
-
+    // Get the number of documents that have the current user name in the owners array
 	@GetMapping("_my_count")
     public ResponseEntity<JsonNode> getMyCount() {
         requirePermission(SUBSCRIBER_READ);
@@ -174,6 +174,7 @@ class SubscriberController extends AbstractController {
         return ResponseEntity.ok(out);
     }
 
+    // Get the number of all documents in this database
     @GetMapping("_count")
     public ResponseEntity<JsonNode> getCount() {
         requirePermission(SUBSCRIBER_READ);
