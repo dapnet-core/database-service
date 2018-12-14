@@ -2,6 +2,8 @@ package de.hampager.dapnet.service.database;
 
 /**
  * This class represents the database configuration.
+ * 
+ * @author Philipp Thiel
  */
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;

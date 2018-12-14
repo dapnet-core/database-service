@@ -5,8 +5,6 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 
-
-import com.fasterxml.jackson.databind.util.JSONPObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,25 +65,25 @@ class TransmitterController extends AbstractController {
 		this.groupsPath = basePath.concat("_design/transmitters/_list/groups/byGroup?group_level=5");
 	}
 
-    @GetMapping
-    public ResponseEntity<JsonNode> getAll(@RequestParam Map<String, String> params) {
-        requirePermission(TRANSMITTER_READ);
+	@GetMapping
+	public ResponseEntity<JsonNode> getAll(@RequestParam Map<String, String> params) {
+		requirePermission(TRANSMITTER_READ);
 
-        URI path = buildViewPath("byId", params);
-        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
-        ObjectNode out = mapper.createObjectNode();
+		URI path = buildViewPath("byId", params);
+		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+		ObjectNode out = mapper.createObjectNode();
 
-        out.put("total_rows", in.get("total_rows").asInt());
-        ArrayNode rows = out.putArray("rows");
-        for (JsonNode n : in.get("rows")) {
-            JsonNode doc = n.get("doc");
-            rows.add(doc);
-        }
+		out.put("total_rows", in.get("total_rows").asInt());
+		ArrayNode rows = out.putArray("rows");
+		for (JsonNode n : in.get("rows")) {
+			JsonNode doc = n.get("doc");
+			rows.add(doc);
+		}
 
-        return ResponseEntity.ok(out);
-    }
+		return ResponseEntity.ok(out);
+	}
 
-    @GetMapping("_names")
+	@GetMapping("_names")
 	public ResponseEntity<JsonNode> getNames() {
 		requirePermission(TRANSMITTER_LIST);
 
@@ -101,25 +99,25 @@ class TransmitterController extends AbstractController {
 		return ResponseEntity.ok(in);
 	}
 
-    @GetMapping("{name}")
-    public ResponseEntity<JsonNode> getTransmitter(@PathVariable String name) {
-        final AppUser appUser = getCurrentUser();
-        final PermissionValue permission = appUser.getPermissions().getOrDefault(TRANSMITTER_READ, PermissionValue.NONE);
-        if (permission == PermissionValue.NONE || permission == PermissionValue.LIMITED) {
-            throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
-        }
+	@GetMapping("{name}")
+	public ResponseEntity<JsonNode> getTransmitter(@PathVariable String name) {
+		final AppUser appUser = getCurrentUser();
+		final PermissionValue permission = appUser.getPermissions().getOrDefault(TRANSMITTER_READ,
+				PermissionValue.NONE);
+		if (permission == PermissionValue.NONE || permission == PermissionValue.LIMITED) {
+			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
+		}
 
-        JsonNode in = restTemplate.getForObject(paramPath, JsonNode.class, name);
-        if (permission == PermissionValue.ALL
-                || (permission == PermissionValue.IF_OWNER && JsonUtils.isOwner(in, appUser.getUsername()))) {
-            return ResponseEntity.ok(in);
-        } else {
-            throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
-        }
-    }
+		JsonNode in = restTemplate.getForObject(paramPath, JsonNode.class, name);
+		if (permission == PermissionValue.ALL
+				|| (permission == PermissionValue.IF_OWNER && JsonUtils.isOwner(in, appUser.getUsername()))) {
+			return ResponseEntity.ok(in);
+		} else {
+			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
+		}
+	}
 
-
-    @PutMapping
+	@PutMapping
 	public ResponseEntity<JsonNode> putTransmitter(@RequestBody JsonNode transmitter) {
 		if (transmitter.has("_rev")) {
 			return updateTransmitter(transmitter);
@@ -193,69 +191,67 @@ class TransmitterController extends AbstractController {
 		final ResponseEntity<JsonNode> db = performPut(transmitterId, modTransmitter);
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
-    // Get all documents that have the current user name in the owners array
-    @GetMapping("_my")
-    public ResponseEntity<JsonNode> getMy() {
-        requirePermission(TRANSMITTER_READ);
 
-        URI path = buildOwnersViewPath(false);
-        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
-        ObjectNode out = mapper.createObjectNode();
+	// Get all documents that have the current user name in the owners array
+	@GetMapping("_my")
+	public ResponseEntity<JsonNode> getMy() {
+		requirePermission(TRANSMITTER_READ);
 
-        // Not sure if this works always, to let's count the rows manually
-        //out.put("total_rows",
-        //        in.get("total_rows").asInt() - in.get("offset").asInt()
-        //);
+		URI path = buildOwnersViewPath(false);
+		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+		ObjectNode out = mapper.createObjectNode();
 
-        Integer total_rows = 0;
+		// Not sure if this works always, to let's count the rows manually
+		// out.put("total_rows",
+		// in.get("total_rows").asInt() - in.get("offset").asInt()
+		// );
 
-        ArrayNode rows = out.putArray("rows");
-        for (JsonNode n : in.get("rows")) {
-            JsonNode doc = n.get("doc");
-            rows.add(doc);
-            total_rows++;
-        }
-        out.put("total_rows", total_rows);
-        return ResponseEntity.ok(out);
-    }
+		Integer total_rows = 0;
 
-    // Get the number of documents that have the current user name in the owners array
-    @GetMapping("_my_count")
-    public ResponseEntity<JsonNode> getMyCount() {
-        requirePermission(TRANSMITTER_READ);
+		ArrayNode rows = out.putArray("rows");
+		for (JsonNode n : in.get("rows")) {
+			JsonNode doc = n.get("doc");
+			rows.add(doc);
+			total_rows++;
+		}
+		out.put("total_rows", total_rows);
+		return ResponseEntity.ok(out);
+	}
 
-        URI path = buildOwnersViewPath(true);
-        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
-        ObjectNode out = mapper.createObjectNode();
+	// Get the number of documents that have the current user name in the owners
+	// array
+	@GetMapping("_my_count")
+	public ResponseEntity<JsonNode> getMyCount() {
+		requirePermission(TRANSMITTER_READ);
 
-        Integer total_items = 0;
-        if (in.has("rows") &&
-                in.get("rows").has(0) &&
-                in.get("rows").get(0).has("value")) {
-            total_items = in.get("rows").get(0).get("value").asInt();
-        }
-        out.put("count", total_items);
-        return ResponseEntity.ok(out);
-    }
+		URI path = buildOwnersViewPath(true);
+		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+		ObjectNode out = mapper.createObjectNode();
 
-    // Get the number of all documents in this database
-    @GetMapping("_count")
-    public ResponseEntity<JsonNode> getCount() {
-        requirePermission(TRANSMITTER_READ);
+		Integer total_items = 0;
+		if (in.has("rows") && in.get("rows").has(0) && in.get("rows").get(0).has("value")) {
+			total_items = in.get("rows").get(0).get("value").asInt();
+		}
+		out.put("count", total_items);
+		return ResponseEntity.ok(out);
+	}
 
-        URI path = buildCountViewPath();
-        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
-        ObjectNode out = mapper.createObjectNode();
+	// Get the number of all documents in this database
+	@GetMapping("_count")
+	public ResponseEntity<JsonNode> getCount() {
+		requirePermission(TRANSMITTER_READ);
 
-        Integer total_items = 0;
-        if (in.has("rows") &&
-                in.get("rows").has(0) &&
-                in.get("rows").get(0).has("value")) {
-            total_items = in.get("rows").get(0).get("value").asInt();
-        }
-        out.put("count", total_items);
-        return ResponseEntity.ok(out);
-    }
+		URI path = buildCountViewPath();
+		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+		ObjectNode out = mapper.createObjectNode();
+
+		Integer total_items = 0;
+		if (in.has("rows") && in.get("rows").has(0) && in.get("rows").get(0).has("value")) {
+			total_items = in.get("rows").get(0).get("value").asInt();
+		}
+		out.put("count", total_items);
+		return ResponseEntity.ok(out);
+	}
 
 	// UNTESTED
 	@DeleteMapping("{name}")

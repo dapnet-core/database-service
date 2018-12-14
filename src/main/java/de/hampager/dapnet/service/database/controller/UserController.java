@@ -100,24 +100,22 @@ public class UserController extends AbstractController {
 
 	}
 
-    // Get the number of all documents in this database
-    @GetMapping("_count")
-    public ResponseEntity<JsonNode> getCount() {
-        requirePermission(USER_READ);
+	// Get the number of all documents in this database
+	@GetMapping("_count")
+	public ResponseEntity<JsonNode> getCount() {
+		requirePermission(USER_READ);
 
-        URI path = buildCountViewPath();
-        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
-        ObjectNode out = mapper.createObjectNode();
+		URI path = buildCountViewPath();
+		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+		ObjectNode out = mapper.createObjectNode();
 
-        Integer total_items = 0;
-        if (in.has("rows") &&
-                in.get("rows").has(0) &&
-                in.get("rows").get(0).has("value")) {
-            total_items = in.get("rows").get(0).get("value").asInt();
-        }
-        out.put("count", total_items);
-        return ResponseEntity.ok(out);
-    }
+		Integer total_items = 0;
+		if (in.has("rows") && in.get("rows").has(0) && in.get("rows").get(0).has("value")) {
+			total_items = in.get("rows").get(0).get("value").asInt();
+		}
+		out.put("count", total_items);
+		return ResponseEntity.ok(out);
+	}
 
 	// User's details
 	@GetMapping("{username}")
@@ -194,8 +192,8 @@ public class UserController extends AbstractController {
 
 		final ResponseEntity<JsonNode> db = performPut(userId, modUser);
 		if (db.getStatusCode() == HttpStatus.CREATED) {
-			final URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}")
-                    .buildAndExpand(userId).toUri();
+			final URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}").buildAndExpand(userId)
+					.toUri();
 			return ResponseEntity.created(location).body(db.getBody());
 		} else {
 			return ResponseEntity.status(db.getStatusCode()).body(db.getBody());

@@ -131,69 +131,67 @@ class SubscriberController extends AbstractController {
 	}
 
 	// Get all documents that have the current user name in the owners array
-    @GetMapping("_my")
-    public ResponseEntity<JsonNode> getMy() {
-        requirePermission(SUBSCRIBER_READ);
+	@GetMapping("_my")
+	public ResponseEntity<JsonNode> getMy() {
+		requirePermission(SUBSCRIBER_READ);
 
-        URI path = buildOwnersViewPath(false);
-        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
-        ObjectNode out = mapper.createObjectNode();
+		URI path = buildOwnersViewPath(false);
+		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+		ObjectNode out = mapper.createObjectNode();
 
-        // Not sure if this works always, to let's count the rows manually
-        //out.put("total_rows",
-        //        in.get("total_rows").asInt() - in.get("offset").asInt()
-        //);
+		// Not sure if this works always, to let's count the rows manually
+		// out.put("total_rows",
+		// in.get("total_rows").asInt() - in.get("offset").asInt()
+		// );
 
-        Integer total_rows = 0;
+		Integer total_rows = 0;
 
-        ArrayNode rows = out.putArray("rows");
-        for (JsonNode n : in.get("rows")) {
-            JsonNode doc = n.get("doc");
-            rows.add(doc);
-            total_rows++;
-        }
-        out.put("total_rows", total_rows);
-        return ResponseEntity.ok(out);
+		ArrayNode rows = out.putArray("rows");
+		for (JsonNode n : in.get("rows")) {
+			JsonNode doc = n.get("doc");
+			rows.add(doc);
+			total_rows++;
+		}
+		out.put("total_rows", total_rows);
+		return ResponseEntity.ok(out);
 	}
-    // Get the number of documents that have the current user name in the owners array
+
+	// Get the number of documents that have the current user name in the owners
+	// array
 	@GetMapping("_my_count")
-    public ResponseEntity<JsonNode> getMyCount() {
-        requirePermission(SUBSCRIBER_READ);
+	public ResponseEntity<JsonNode> getMyCount() {
+		requirePermission(SUBSCRIBER_READ);
 
-        URI path = buildOwnersViewPath(false);
-        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
-        ObjectNode out = mapper.createObjectNode();
+		URI path = buildOwnersViewPath(false);
+		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+		ObjectNode out = mapper.createObjectNode();
 
-        Integer total_items = 0;
-        if (in.has("rows") &&
-                in.get("rows").has(0) &&
-                in.get("rows").get(0).has("value")) {
-            total_items = in.get("rows").get(0).get("value").asInt();
-        }
-        out.put("count", total_items);
-        return ResponseEntity.ok(out);
-    }
+		Integer total_items = 0;
+		if (in.has("rows") && in.get("rows").has(0) && in.get("rows").get(0).has("value")) {
+			total_items = in.get("rows").get(0).get("value").asInt();
+		}
+		out.put("count", total_items);
+		return ResponseEntity.ok(out);
+	}
 
-    // Get the number of all documents in this database
-    @GetMapping("_count")
-    public ResponseEntity<JsonNode> getCount() {
-        requirePermission(SUBSCRIBER_READ);
+	// Get the number of all documents in this database
+	@GetMapping("_count")
+	public ResponseEntity<JsonNode> getCount() {
+		requirePermission(SUBSCRIBER_READ);
 
-        URI path = buildCountViewPath();
-        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
-        ObjectNode out = mapper.createObjectNode();
+		URI path = buildCountViewPath();
+		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+		ObjectNode out = mapper.createObjectNode();
 
-        Integer total_items = 0;
-        if (in.has("rows") &&
-                in.get("rows").has(0) &&
-                in.get("rows").get(0).has("value")) {
-            total_items = in.get("rows").get(0).get("value").asInt();
-        }
-        out.put("count", total_items);
-        return ResponseEntity.ok(out);
-    }
+		Integer total_items = 0;
+		if (in.has("rows") && in.get("rows").has(0) && in.get("rows").get(0).has("value")) {
+			total_items = in.get("rows").get(0).get("value").asInt();
+		}
+		out.put("count", total_items);
+		return ResponseEntity.ok(out);
+	}
 
-    @GetMapping("{name}")
+	@GetMapping("{name}")
 	public ResponseEntity<JsonNode> getSubscriber(@PathVariable String name) {
 		final AppUser appUser = getCurrentUser();
 		final PermissionValue permission = appUser.getPermissions().getOrDefault(SUBSCRIBER_READ, PermissionValue.NONE);
