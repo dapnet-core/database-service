@@ -45,10 +45,12 @@ class TransmitterController extends AbstractController {
 	private static final Logger logger = LoggerFactory.getLogger(TransmitterController.class);
 
 	private static final Set<String> VALID_KEYS_UPDATE = Set.of("usage", "timeslots", "power", "owners", "groups",
-			"coordinates", "aprs_broadcast", "enabled", "auth_key", "antenna", "type", "gain", "direction", "agl");
+			"coordinates", "aprs_broadcast", "enabled", "auth_key", "antenna", "type", "gain", "direction", "agl",
+            "emergency_power","available", "infinite", "duration");
 
 	private static final String[] REQUIRED_KEYS_CREATE = { "_id", "usage", "timeslots", "power", "owners", "groups",
-			"coordinates", "aprs_broadcast", "enabled", "auth_key", "antenna", "type", "gain", "direction", "agl" };
+			"coordinates", "aprs_broadcast", "enabled", "auth_key", "antenna", "type", "gain", "direction", "agl",
+            "emergency_power","available", "infinite", "duration" };
 
 	private static final String TRANSMITTER_LIST = "transmitter.list";
 	private static final String TRANSMITTER_READ = "transmitter.read";
