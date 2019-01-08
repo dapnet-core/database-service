@@ -62,10 +62,10 @@ class RubricController extends AbstractController {
 	@Autowired
 	public RubricController(DbConfig config, RestTemplateBuilder builder) {
 		super(config, builder, "rubrics");
-		this.namesPath = basePath.concat("_design/rubrics/_list/names/byId");
-		this.descriptionPath = basePath.concat("_design/rubrics/_list/descriptions/descriptions");
-		this.labelPath = basePath.concat("_design/rubrics/_list/labels/labels");
-		this.fullMetaPath = basePath.concat("_design/rubrics/_list/fullmeta/fullmeta");
+		this.namesPath = basePath.concat("_design/rubrics/_list/names/byId?reduce=false");
+		this.descriptionPath = basePath.concat("_design/rubrics/_list/descriptions/descriptions?reduce=false");
+		this.labelPath = basePath.concat("_design/rubrics/_list/labels/labels?reduce=false");
+		this.fullMetaPath = basePath.concat("_design/rubrics/_list/fullmeta/fullmeta?reduce=false");
 	}
 
 	@GetMapping
@@ -290,7 +290,68 @@ class RubricController extends AbstractController {
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
-	// UNTESTED
+    // Get all documents that have the current user name in the owners array
+    @GetMapping("_my")
+    public ResponseEntity<JsonNode> getMy() {
+        requirePermission(RUBRIC_READ);
+
+        URI path = buildOwnersViewPath(false);
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        // Not sure if this works always, to let's count the rows manually
+        // out.put("total_rows",
+        // in.get("total_rows").asInt() - in.get("offset").asInt()
+        // );
+
+        Integer total_rows = 0;
+
+        ArrayNode rows = out.putArray("rows");
+        for (JsonNode n : in.get("rows")) {
+            JsonNode doc = n.get("doc");
+            rows.add(doc);
+            total_rows++;
+        }
+        out.put("total_rows", total_rows);
+        return ResponseEntity.ok(out);
+    }
+
+    // Get the number of documents that have the current user name in the owners
+    // array
+    @GetMapping("_my_count")
+    public ResponseEntity<JsonNode> getMyCount() {
+        requirePermission(RUBRIC_READ);
+
+        URI path = buildOwnersViewPath(true);
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        Integer total_items = 0;
+        if (in.has("rows") && in.get("rows").has(0) && in.get("rows").get(0).has("value")) {
+            total_items = in.get("rows").get(0).get("value").asInt();
+        }
+        out.put("count", total_items);
+        return ResponseEntity.ok(out);
+    }
+
+    // Get the number of all documents in this database
+    @GetMapping("_count")
+    public ResponseEntity<JsonNode> getCount() {
+        requirePermission(RUBRIC_READ);
+
+        URI path = buildCountViewPath();
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        Integer total_items = 0;
+        if (in.has("rows") && in.get("rows").has(0) && in.get("rows").get(0).has("value")) {
+            total_items = in.get("rows").get(0).get("value").asInt();
+        }
+        out.put("count", total_items);
+        return ResponseEntity.ok(out);
+    }
+
+    // UNTESTED
 	@DeleteMapping("{name}")
 	public ResponseEntity<JsonNode> deleteRubric(@PathVariable String name, @RequestParam String revision) {
 		final AppUser user = getCurrentUser();
