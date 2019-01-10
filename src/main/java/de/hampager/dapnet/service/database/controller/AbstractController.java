@@ -174,7 +174,6 @@ public abstract class AbstractController {
 		}
 	}
 
-	// TODO Add support for owners array
 	protected PermissionValue requireAdminOrOwner(String permission, String ownerName) {
 		final AppUser user = getCurrentUser();
 		final PermissionValue current = user.getPermissions().getOrDefault(permission, PermissionValue.NONE);
