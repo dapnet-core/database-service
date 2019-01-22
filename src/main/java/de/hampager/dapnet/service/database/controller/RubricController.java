@@ -11,15 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -45,11 +37,13 @@ class RubricController extends AbstractController {
 
 	private static final Logger logger = LoggerFactory.getLogger(RubricController.class);
 	private static final Set<String> VALID_KEYS_UPDATE = Set.of("number", "description", "label",
-            "transmitter_groups", "transmitters", "cyclic_transmit", "cyclic_transmit_interval",
-            "owners", "function", "default_expiration", "default_priority", "content", "data",
-            "expires_on", "priority");
-	private static final String[] REQUIRED_KEYS_CREATE = { "_id", "number", "label", "description",
-			"transmitter_groups", "transmitters", "owners", "default_priority", "default_expiration" };
+			"transmitter_groups", "transmitters", "cyclic_transmit", "cyclic_transmit_interval",
+			"owners", "function", "default_expiration", "default_priority", "content", "data",
+			"expires_on", "priority");
+	private static final String[] REQUIRED_KEYS_CREATE = {"_id", "number", "label", "description",
+			"transmitter_groups", "transmitters", "owners", "default_priority", "default_expiration"};
+	private static final String[] REQUIRED_KEYS_POST_CONTENT_FIRST = {"_id", "data"};
+	private static final String[] REQUIRED_KEYS_POST_CONTENT_RANDOM = {"_id", "data", "slot"};
 	private static final String RUBRIC_LIST = "rubric.list";
 	private static final String RUBRIC_READ = "rubric.read";
 	private static final String RUBRIC_UPDATE = "rubric.update";
@@ -267,6 +261,7 @@ class RubricController extends AbstractController {
 
 		final String rubricId = rubricUpdate.get("_id").asText().toLowerCase();
 		final JsonNode oldRubric = restTemplate.getForObject(paramPath, JsonNode.class, rubricId);
+		// Test if fetch rubric contains current user in owner array
 		if (permission == PermissionValue.IF_OWNER && !JsonUtils.isOwner(oldRubric, appUser.getUsername())) {
 			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
 		}
@@ -292,68 +287,68 @@ class RubricController extends AbstractController {
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
-    // Get all documents that have the current user name in the owners array
-    @GetMapping("_my")
-    public ResponseEntity<JsonNode> getMy() {
-        requirePermission(RUBRIC_READ);
+	// Get all documents that have the current user name in the owners array
+	@GetMapping("_my")
+	public ResponseEntity<JsonNode> getMy() {
+		requirePermission(RUBRIC_READ);
 
-        URI path = buildOwnersViewPath(false);
-        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
-        ObjectNode out = mapper.createObjectNode();
+		URI path = buildOwnersViewPath(false);
+		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+		ObjectNode out = mapper.createObjectNode();
 
-        // Not sure if this works always, to let's count the rows manually
-        // out.put("total_rows",
-        // in.get("total_rows").asInt() - in.get("offset").asInt()
-        // );
+		// Not sure if this works always, to let's count the rows manually
+		// out.put("total_rows",
+		// in.get("total_rows").asInt() - in.get("offset").asInt()
+		// );
 
-        Integer total_rows = 0;
+		Integer total_rows = 0;
 
-        ArrayNode rows = out.putArray("rows");
-        for (JsonNode n : in.get("rows")) {
-            JsonNode doc = n.get("doc");
-            rows.add(doc);
-            total_rows++;
-        }
-        out.put("total_rows", total_rows);
-        return ResponseEntity.ok(out);
-    }
+		ArrayNode rows = out.putArray("rows");
+		for (JsonNode n : in.get("rows")) {
+			JsonNode doc = n.get("doc");
+			rows.add(doc);
+			total_rows++;
+		}
+		out.put("total_rows", total_rows);
+		return ResponseEntity.ok(out);
+	}
 
-    // Get the number of documents that have the current user name in the owners
-    // array
-    @GetMapping("_my_count")
-    public ResponseEntity<JsonNode> getMyCount() {
-        requirePermission(RUBRIC_READ);
+	// Get the number of documents that have the current user name in the owners
+	// array
+	@GetMapping("_my_count")
+	public ResponseEntity<JsonNode> getMyCount() {
+		requirePermission(RUBRIC_READ);
 
-        URI path = buildOwnersViewPath(true);
-        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
-        ObjectNode out = mapper.createObjectNode();
+		URI path = buildOwnersViewPath(true);
+		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+		ObjectNode out = mapper.createObjectNode();
 
-        Integer total_items = 0;
-        if (in.has("rows") && in.get("rows").has(0) && in.get("rows").get(0).has("value")) {
-            total_items = in.get("rows").get(0).get("value").asInt();
-        }
-        out.put("count", total_items);
-        return ResponseEntity.ok(out);
-    }
+		Integer total_items = 0;
+		if (in.has("rows") && in.get("rows").has(0) && in.get("rows").get(0).has("value")) {
+			total_items = in.get("rows").get(0).get("value").asInt();
+		}
+		out.put("count", total_items);
+		return ResponseEntity.ok(out);
+	}
 
-    // Get the number of all documents in this database
-    @GetMapping("_count")
-    public ResponseEntity<JsonNode> getCount() {
-        requirePermission(RUBRIC_READ);
+	// Get the number of all documents in this database
+	@GetMapping("_count")
+	public ResponseEntity<JsonNode> getCount() {
+		requirePermission(RUBRIC_READ);
 
-        URI path = buildCountViewPath();
-        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
-        ObjectNode out = mapper.createObjectNode();
+		URI path = buildCountViewPath();
+		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+		ObjectNode out = mapper.createObjectNode();
 
-        Integer total_items = 0;
-        if (in.has("rows") && in.get("rows").has(0) && in.get("rows").get(0).has("value")) {
-            total_items = in.get("rows").get(0).get("value").asInt();
-        }
-        out.put("count", total_items);
-        return ResponseEntity.ok(out);
-    }
+		Integer total_items = 0;
+		if (in.has("rows") && in.get("rows").has(0) && in.get("rows").get(0).has("value")) {
+			total_items = in.get("rows").get(0).get("value").asInt();
+		}
+		out.put("count", total_items);
+		return ResponseEntity.ok(out);
+	}
 
-    // UNTESTED
+	// UNTESTED
 	@DeleteMapping("{name}")
 	public ResponseEntity<JsonNode> deleteRubric(@PathVariable String name, @RequestParam String revision) {
 		final AppUser user = getCurrentUser();
@@ -372,5 +367,176 @@ class RubricController extends AbstractController {
 		// TODO Delete referenced objects
 		final ResponseEntity<JsonNode> db = performDelete(name, revision);
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
+	}
+
+	// UNTESTED
+	@PostMapping("/content/first")
+	public ResponseEntity<JsonNode> postRubricContent(@RequestBody JsonNode body) {
+		final PermissionValue permission = requirePermission(RUBRIC_UPDATE, PermissionValue.ALL,
+				PermissionValue.IF_OWNER);
+		final AppUser appUser = getCurrentUser();
+
+		body = JsonUtils.trimValues(body);
+
+		if (body.get("_id").asText().isEmpty()) {
+			// _id empty
+			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST,
+					"Field _id is empty, don't know which rubric you are talking about.");
+		}
+
+		if (body.get("data").asText().isEmpty()) {
+			// _id empty
+			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST,
+					"Field data is empty, so no content provided to update the rubric");
+		}
+
+		final String rubricId = body.get("_id").asText().toLowerCase();
+		final JsonNode oldRubric = restTemplate.getForObject(paramPath, JsonNode.class, rubricId);
+		// Test if fetch rubric contains current user in owner array
+		if (permission == PermissionValue.IF_OWNER && !JsonUtils.isOwner(oldRubric, appUser.getUsername())) {
+			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
+		}
+
+		// New object to contain the changes
+		ObjectNode updatedRubric = mapper.createObjectNode();
+
+		// Generate mandatory fields
+		updatedRubric.put("changed_on", Instant.now().toString());
+		updatedRubric.put("changed_by", appUser.getUsername());
+		updatedRubric.put("_id", rubricId);
+		updatedRubric.put("_rev", oldRubric.get("_rev").asText());
+
+		ObjectNode newContent;
+		try {
+			newContent = (ObjectNode) oldRubric.get("content");
+		} catch (ClassCastException ex) {
+			logger.error("Failed to cast JsonNode to ObjectNode");
+			throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
+		ObjectNode newContentObject = mapper.createObjectNode();
+		newContentObject.put("data", body.get("data").asText());
+		if (body.has("expires_on") && !body.get("expires_on").asText().isEmpty()) {
+			newContentObject.put("expires_on", body.get("expires_on").asText());
+		}
+		if (body.has("priority") && !body.get("priority").isInt()) {
+			newContentObject.put("priority", body.get("priority").asText());
+		}
+
+		// Get an Array with the current content items
+		ArrayNode contentArray;
+		try {
+			contentArray = (ArrayNode) newContent.get("content");
+		} catch (ClassCastException ex) {
+			logger.error("Failed to cast JsonNode to ArrayNode");
+			throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
+		// Add new Content to the beginning of the Array
+		contentArray.insert(0, newContentObject);
+
+		// If after adding there are more than 10 contents, delete the last one.
+		if (contentArray.size() >= 10) {
+			contentArray.remove(10);
+		}
+
+		// Insert the new array into the request payload to the CouchDB
+		newContent.set("content", contentArray);
+
+		updatedRubric.set("content", newContent);
+		// Write to CouchDB
+		final ResponseEntity<JsonNode> db = performPut(rubricId, updatedRubric);
+		// Return the CouchDB response
+		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
+
+	}
+
+	// UNTESTED
+	@PostMapping("/content/{slot}")
+	public ResponseEntity<JsonNode> postRubricContent(@PathVariable int slot, @RequestBody JsonNode body) {
+		final PermissionValue permission = requirePermission(RUBRIC_UPDATE, PermissionValue.ALL,
+				PermissionValue.IF_OWNER);
+		final AppUser appUser = getCurrentUser();
+
+		body = JsonUtils.trimValues(body);
+
+		if (body.get("_id").asText().isEmpty()) {
+			// _id empty
+			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST,
+					"Field _id is empty, don't know which rubric you are talking about.");
+		}
+
+		if (body.get("data").asText().isEmpty()) {
+			// _id empty
+			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST,
+					"Field data is empty, so no content provided to update the rubric");
+		}
+
+		if (slot < 1 || slot > 10) {
+			// slot not between 1 and 10
+			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST,
+					"Message slot in URL is not betwenn 1 and 10.");
+		}
+
+
+		final String rubricId = body.get("_id").asText().toLowerCase();
+		final JsonNode oldRubric = restTemplate.getForObject(paramPath, JsonNode.class, rubricId);
+		// Test if fetch rubric contains current user in owner array
+		if (permission == PermissionValue.IF_OWNER && !JsonUtils.isOwner(oldRubric, appUser.getUsername())) {
+			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
+		}
+
+		// New object to contain the changes
+		ObjectNode updatedRubric = mapper.createObjectNode();
+
+		// Generate mandatory fields
+		updatedRubric.put("changed_on", Instant.now().toString());
+		updatedRubric.put("changed_by", appUser.getUsername());
+		updatedRubric.put("_id", rubricId);
+		updatedRubric.put("_rev", oldRubric.get("_rev").asText());
+
+		ObjectNode newContent;
+		try {
+			newContent = (ObjectNode) oldRubric.get("content");
+		} catch (ClassCastException ex) {
+			logger.error("Failed to cast JsonNode to ObjectNode");
+			throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
+		ObjectNode newContentObject = mapper.createObjectNode();
+		newContentObject.put("data", body.get("data").asText());
+		if (body.has("expires_on") && !body.get("expires_on").asText().isEmpty()) {
+			newContentObject.put("expires_on", body.get("expires_on").asText());
+		}
+		if (body.has("priority") && !body.get("priority").isInt()) {
+			newContentObject.put("priority", body.get("priority").asText());
+		}
+
+		// Get an Array with the current content items
+		ArrayNode contentArray;
+		try {
+			contentArray = (ArrayNode) newContent.get("content");
+		} catch (ClassCastException ex) {
+			logger.error("Failed to cast JsonNode to ArrayNode");
+			throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
+		if (contentArray.size() < slot) {
+			// if the requested slot is outside of the current population, add it to the end
+			contentArray.insert(contentArray.size(), newContentObject);
+		} else {
+			// Add new content to the desired slot
+			contentArray.insert(slot + 1, newContentObject);
+		}
+
+		// Insert the new array into the request payload to the CouchDB
+		newContent.set("content", contentArray);
+
+		updatedRubric.set("content", newContent);
+		// Write to CouchDB
+		final ResponseEntity<JsonNode> db = performPut(rubricId, updatedRubric);
+		// Return the CouchDB response
+		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
+
 	}
 }
