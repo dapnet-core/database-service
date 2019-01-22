@@ -54,8 +54,8 @@ public class NodeController extends AbstractController {
 	public NodeController(DbConfig config, RestTemplateBuilder builder) {
 		super(config, builder, "nodes");
 
-		this.namePath = basePath.concat("_design/nodes/_list/names/byId");
-		this.descriptionPath = basePath.concat("_design/nodes/_list/descriptions/descriptions");
+		this.namePath = basePath.concat("_design/nodes/_list/names/byId?reduce=false");
+		this.descriptionPath = basePath.concat("_design/nodes/_list/descriptions/descriptions?reduce=false");
 	}
 
 	@GetMapping
@@ -199,7 +199,69 @@ public class NodeController extends AbstractController {
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
 	}
 
-	@DeleteMapping("{nodename}")
+    // Get all documents that have the current user name in the owners array
+    @GetMapping("_my")
+    public ResponseEntity<JsonNode> getMy() {
+        requirePermission(NODE_READ);
+
+        URI path = buildOwnersViewPath(false);
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        // Not sure if this works always, to let's count the rows manually
+        // out.put("total_rows",
+        // in.get("total_rows").asInt() - in.get("offset").asInt()
+        // );
+
+        Integer total_rows = 0;
+
+        ArrayNode rows = out.putArray("rows");
+        for (JsonNode n : in.get("rows")) {
+            JsonNode doc = n.get("doc");
+            rows.add(doc);
+            total_rows++;
+        }
+        out.put("total_rows", total_rows);
+        return ResponseEntity.ok(out);
+    }
+
+    // Get the number of documents that have the current user name in the owners
+    // array
+    @GetMapping("_my_count")
+    public ResponseEntity<JsonNode> getMyCount() {
+        requirePermission(NODE_READ);
+
+        URI path = buildOwnersViewPath(true);
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        Integer total_items = 0;
+        if (in.has("rows") && in.get("rows").has(0) && in.get("rows").get(0).has("value")) {
+            total_items = in.get("rows").get(0).get("value").asInt();
+        }
+        out.put("count", total_items);
+        return ResponseEntity.ok(out);
+    }
+
+    // Get the number of all documents in this database
+    @GetMapping("_count")
+    public ResponseEntity<JsonNode> getCount() {
+        requirePermission(NODE_READ);
+
+        URI path = buildCountViewPath();
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        Integer total_items = 0;
+        if (in.has("rows") && in.get("rows").has(0) && in.get("rows").get(0).has("value")) {
+            total_items = in.get("rows").get(0).get("value").asInt();
+        }
+        out.put("count", total_items);
+        return ResponseEntity.ok(out);
+    }
+
+
+    @DeleteMapping("{nodename}")
 	public ResponseEntity<JsonNode> deleteNode(@PathVariable String nodename, @RequestParam String revision) {
 		final AppUser user = getCurrentUser();
 		final PermissionValue permission = user.getPermissions().getOrDefault(NODE_DELETE, PermissionValue.NONE);
