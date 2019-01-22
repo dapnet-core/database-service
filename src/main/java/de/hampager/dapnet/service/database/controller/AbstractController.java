@@ -63,7 +63,7 @@ public abstract class AbstractController {
 		basePath = String.format("%s/%s/", config.getHost(), path);
 		paramPath = basePath.concat("{param}");
 		avatarPath = basePath.concat("{param}/avatar.jpg");
-		viewBasePath = String.format("%s/_design/%s/_view/", basePath, path);
+		viewBasePath = String.format("%s_design/%s/_view/", basePath, path);
 	}
 
 	@ExceptionHandler(HttpClientErrorException.class)
