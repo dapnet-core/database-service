@@ -162,7 +162,7 @@ class SubscriberController extends AbstractController {
 	public ResponseEntity<JsonNode> getMyCount() {
 		requirePermission(SUBSCRIBER_READ);
 
-		URI path = buildOwnersViewPath(false);
+		URI path = buildOwnersViewPath(true);
 		JsonNode in = restTemplate.getForObject(path, JsonNode.class);
 		ObjectNode out = mapper.createObjectNode();
 
