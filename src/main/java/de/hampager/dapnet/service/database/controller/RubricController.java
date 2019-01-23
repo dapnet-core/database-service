@@ -42,14 +42,14 @@ class RubricController extends AbstractController {
 			"expires_on", "priority");
 	private static final String[] REQUIRED_KEYS_CREATE = {"_id", "number", "label", "description",
 			"transmitter_groups", "transmitters", "owners", "default_priority", "default_expiration"};
-	private static final String[] REQUIRED_KEYS_POST_CONTENT_FIRST = {"_id", "data"};
-	private static final String[] REQUIRED_KEYS_POST_CONTENT_RANDOM = {"_id", "data", "slot"};
+	private static final String[] REQUIRED_KEYS_POST_CONTENT = {"_id", "data"};
 	private static final String RUBRIC_LIST = "rubric.list";
 	private static final String RUBRIC_READ = "rubric.read";
 	private static final String RUBRIC_UPDATE = "rubric.update";
 	private static final String RUBRIC_CREATE = "rubric.create";
 	private static final String RUBRIC_DELETE = "rubric.delete";
 	private static final int RUBRIC_MAX_NUMBER = 95;
+    private static final int RUBRIC_MAX_LENGTH = 80;
 	private final String namesPath;
 	private final String descriptionPath;
 	private final String labelPath;
@@ -371,113 +371,39 @@ class RubricController extends AbstractController {
 
 	// UNTESTED
 	@PostMapping("/content/first")
-	public ResponseEntity<JsonNode> postRubricContent(@RequestBody JsonNode body) {
-		final PermissionValue permission = requirePermission(RUBRIC_UPDATE, PermissionValue.ALL,
-				PermissionValue.IF_OWNER);
-		final AppUser appUser = getCurrentUser();
-
-		body = JsonUtils.trimValues(body);
-
-		if (body.get("_id").asText().isEmpty()) {
-			// _id empty
-			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST,
-					"Field _id is empty, don't know which rubric you are talking about.");
-		}
-
-		if (body.get("data").asText().isEmpty()) {
-			// _id empty
-			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST,
-					"Field data is empty, so no content provided to update the rubric");
-		}
-
-		final String rubricId = body.get("_id").asText().toLowerCase();
-		final JsonNode oldRubric = restTemplate.getForObject(paramPath, JsonNode.class, rubricId);
-		// Test if fetch rubric contains current user in owner array
-		if (permission == PermissionValue.IF_OWNER && !JsonUtils.isOwner(oldRubric, appUser.getUsername())) {
-			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
-		}
-
-		// New object to contain the changes
-		ObjectNode updatedRubric = mapper.createObjectNode();
-
-		// Generate mandatory fields
-		updatedRubric.put("changed_on", Instant.now().toString());
-		updatedRubric.put("changed_by", appUser.getUsername());
-		updatedRubric.put("_id", rubricId);
-		updatedRubric.put("_rev", oldRubric.get("_rev").asText());
-
-		ObjectNode newContent;
-		try {
-			newContent = (ObjectNode) oldRubric.get("content");
-		} catch (ClassCastException ex) {
-			logger.error("Failed to cast JsonNode to ObjectNode");
-			throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-
-		ObjectNode newContentObject = mapper.createObjectNode();
-		newContentObject.put("data", body.get("data").asText());
-		if (body.has("expires_on") && !body.get("expires_on").asText().isEmpty()) {
-			newContentObject.put("expires_on", body.get("expires_on").asText());
-		}
-		if (body.has("priority") && !body.get("priority").isInt()) {
-			newContentObject.put("priority", body.get("priority").asText());
-		}
-
-		// Get an Array with the current content items
-		ArrayNode contentArray;
-		try {
-			contentArray = (ArrayNode) newContent.get("content");
-		} catch (ClassCastException ex) {
-			logger.error("Failed to cast JsonNode to ArrayNode");
-			throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-
-		// Add new Content to the beginning of the Array
-		contentArray.insert(0, newContentObject);
-
-		// If after adding there are more than 10 contents, delete the last one.
-		if (contentArray.size() >= 10) {
-			contentArray.remove(10);
-		}
-
-		// Insert the new array into the request payload to the CouchDB
-		newContent.set("content", contentArray);
-
-		updatedRubric.set("content", newContent);
-		// Write to CouchDB
-		final ResponseEntity<JsonNode> db = performPut(rubricId, updatedRubric);
-		// Return the CouchDB response
-		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
-
+	public ResponseEntity<JsonNode> postRubricContentFirst(@RequestBody JsonNode body) {
+        try {
+            JsonUtils.checkRequiredFields(body, REQUIRED_KEYS_POST_CONTENT);
+        } catch (MissingFieldException ex) {
+            throw new HttpServerErrorException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
+        return updateRubricContent(body, -1);
 	}
 
 	// UNTESTED
-	@PostMapping("/content/{slot}")
-	public ResponseEntity<JsonNode> postRubricContent(@PathVariable int slot, @RequestBody JsonNode body) {
+	@PostMapping("/content/slot/{slot}")
+	public ResponseEntity<JsonNode> postRubricContentSlot(@PathVariable int slot, @RequestBody JsonNode body) {
+        try {
+            JsonUtils.checkRequiredFields(body, REQUIRED_KEYS_POST_CONTENT);
+        } catch (MissingFieldException ex) {
+            throw new HttpServerErrorException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
+
+        // Test slot range
+        if (slot < 1 || slot > 10) {
+            // slot not between 1 and 10
+            throw new HttpServerErrorException(HttpStatus.BAD_REQUEST,
+                    "Message slot in URL is not between 1 and 10.");
+        }
+        return updateRubricContent(body, slot);
+	}
+
+	private ResponseEntity<JsonNode> updateRubricContent(JsonNode body, int slot) {
 		final PermissionValue permission = requirePermission(RUBRIC_UPDATE, PermissionValue.ALL,
 				PermissionValue.IF_OWNER);
 		final AppUser appUser = getCurrentUser();
 
 		body = JsonUtils.trimValues(body);
-
-		if (body.get("_id").asText().isEmpty()) {
-			// _id empty
-			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST,
-					"Field _id is empty, don't know which rubric you are talking about.");
-		}
-
-		if (body.get("data").asText().isEmpty()) {
-			// _id empty
-			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST,
-					"Field data is empty, so no content provided to update the rubric");
-		}
-
-		if (slot < 1 || slot > 10) {
-			// slot not between 1 and 10
-			throw new HttpServerErrorException(HttpStatus.BAD_REQUEST,
-					"Message slot in URL is not betwenn 1 and 10.");
-		}
-
 
 		final String rubricId = body.get("_id").asText().toLowerCase();
 		final JsonNode oldRubric = restTemplate.getForObject(paramPath, JsonNode.class, rubricId);
@@ -486,57 +412,70 @@ class RubricController extends AbstractController {
 			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
 		}
 
-		// New object to contain the changes
-		ObjectNode updatedRubric = mapper.createObjectNode();
-
-		// Generate mandatory fields
-		updatedRubric.put("changed_on", Instant.now().toString());
-		updatedRubric.put("changed_by", appUser.getUsername());
-		updatedRubric.put("_id", rubricId);
-		updatedRubric.put("_rev", oldRubric.get("_rev").asText());
-
-		ObjectNode newContent;
+		ObjectNode modRubric;
 		try {
-			newContent = (ObjectNode) oldRubric.get("content");
+			modRubric = (ObjectNode) oldRubric;
 		} catch (ClassCastException ex) {
 			logger.error("Failed to cast JsonNode to ObjectNode");
 			throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
+		// Generate new object for this rubric content
 		ObjectNode newContentObject = mapper.createObjectNode();
+
+		if (body.get("data").asText().length() > RUBRIC_MAX_LENGTH) {
+            throw new HttpServerErrorException(HttpStatus.BAD_REQUEST,
+                    "data length is more the 80 characters");
+        }
+
 		newContentObject.put("data", body.get("data").asText());
+
 		if (body.has("expires_on") && !body.get("expires_on").asText().isEmpty()) {
 			newContentObject.put("expires_on", body.get("expires_on").asText());
 		}
-		if (body.has("priority") && !body.get("priority").isInt()) {
-			newContentObject.put("priority", body.get("priority").asText());
+		if (body.has("priority")) {
+		    if (!(body.get("priority").isInt())) {
+                throw new HttpServerErrorException(HttpStatus.BAD_REQUEST,
+                        "priority in POST body is not an integer");
+            }
+		    if (body.get("priority").asInt() < 1 || body.get("priority").asInt() > 5) {
+                throw new HttpServerErrorException(HttpStatus.BAD_REQUEST,
+                        "priority in POST body is not between 1 and 5.");
+            }
+            newContentObject.put("priority", body.get("priority").asInt());
 		}
 
-		// Get an Array with the current content items
+		// Get an Array with the old content items
 		ArrayNode contentArray;
 		try {
-			contentArray = (ArrayNode) newContent.get("content");
+			contentArray = (ArrayNode) oldRubric.get("content");
 		} catch (ClassCastException ex) {
 			logger.error("Failed to cast JsonNode to ArrayNode");
 			throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
-		if (contentArray.size() < slot) {
-			// if the requested slot is outside of the current population, add it to the end
-			contentArray.insert(contentArray.size(), newContentObject);
+		if (slot == -1) {
+			// Insert new content at the beginning
+			contentArray.insert(0, newContentObject);
+			if (contentArray.size() > 10) {
+				contentArray.remove(10);
+			}
 		} else {
-			// Add new content to the desired slot
-			contentArray.insert(slot + 1, newContentObject);
+			if (contentArray.size() < slot) {
+				// if the requested slot is outside of the current population, add it to the end
+				contentArray.insert(contentArray.size(), newContentObject);
+			} else {
+				// Add new content to the desired slot
+				contentArray.set(slot - 1, newContentObject);
+			}
 		}
+		// Set updated contentArray to rubric node to be sent to CouchDB
+		modRubric.set("content", contentArray);
 
-		// Insert the new array into the request payload to the CouchDB
-		newContent.set("content", contentArray);
+		modRubric.put("changed_on", Instant.now().toString());
+		modRubric.put("changed_by", appUser.getUsername());
 
-		updatedRubric.set("content", newContent);
-		// Write to CouchDB
-		final ResponseEntity<JsonNode> db = performPut(rubricId, updatedRubric);
-		// Return the CouchDB response
+		final ResponseEntity<JsonNode> db = performPut(rubricId, modRubric);
 		return ResponseEntity.status(db.getStatusCode()).body(db.getBody());
-
 	}
 }
