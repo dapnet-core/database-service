@@ -41,7 +41,8 @@ class RubricController extends AbstractController {
 			"owners", "function", "default_expiration", "default_priority", "content", "data",
 			"expires_on", "priority");
 	private static final String[] REQUIRED_KEYS_CREATE = {"_id", "number", "label", "description",
-			"transmitter_groups", "transmitters", "owners", "default_priority", "default_expiration"};
+			"transmitter_groups", "transmitters", "owners", "default_priority", "default_expiration", "function",
+            "content"};
 	private static final String[] REQUIRED_KEYS_POST_CONTENT = {"_id", "data"};
 	private static final String RUBRIC_LIST = "rubric.list";
 	private static final String RUBRIC_READ = "rubric.read";

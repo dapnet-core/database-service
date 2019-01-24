@@ -49,8 +49,7 @@ class TransmitterController extends AbstractController {
             "emergency_power","available", "infinite", "duration");
 
 	private static final String[] REQUIRED_KEYS_CREATE = { "_id", "usage", "timeslots", "power", "owners", "groups",
-			"coordinates", "aprs_broadcast", "enabled", "auth_key", "antenna", "type", "gain", "direction", "agl",
-            "emergency_power","available", "infinite", "duration" };
+			"coordinates", "aprs_broadcast", "enabled", "auth_key", "antenna", "emergency_power" };
 
 	private static final String TRANSMITTER_LIST = "transmitter.list";
 	private static final String TRANSMITTER_READ = "transmitter.read";
