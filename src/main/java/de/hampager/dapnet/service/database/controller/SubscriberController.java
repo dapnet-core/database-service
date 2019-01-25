@@ -48,7 +48,8 @@ class SubscriberController extends AbstractController {
 
 	// TODO Define keys in List "pagers"
 
-	private static final Set<String> VALID_KEYS_UPDATE = Set.of("description", "pagers", "owners");
+	private static final Set<String> VALID_KEYS_UPDATE = Set.of("description", "pagers", "owners", "groups",
+            "third_party_services");
 	private static final String[] REQUIRED_KEYS_CREATE = { "_id", "pagers", "owners" };
 	private static final String SUBSCRIBER_LIST = "subscriber.list";
 	private static final String SUBSCRIBER_READ = "subscriber.read";
