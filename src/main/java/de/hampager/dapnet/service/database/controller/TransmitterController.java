@@ -58,12 +58,14 @@ class TransmitterController extends AbstractController {
 	private static final String TRANSMITTER_DELETE = "transmitter.delete";
 	private final String namesPath;
 	private final String groupsPath;
+	private final String mapPath;
 
 	@Autowired
 	public TransmitterController(DbConfig config, RestTemplateBuilder builder) {
 		super(config, builder, "transmitters");
 		this.namesPath = basePath.concat("_design/transmitters/_list/names/byId?reduce=false");
 		this.groupsPath = basePath.concat("_design/transmitters/_list/groups/byGroup?group_level=5");
+		this.mapPath = basePath.concat("_design/transmitters/_view/map?reduce=false");
 	}
 
 	@GetMapping
@@ -117,6 +119,14 @@ class TransmitterController extends AbstractController {
 			throw new HttpServerErrorException(HttpStatus.FORBIDDEN);
 		}
 	}
+
+    @GetMapping("map")
+    public ResponseEntity<JsonNode> getLocations() {
+        requirePermission(TRANSMITTER_LIST);
+
+        JsonNode in = restTemplate.getForObject(mapPath, JsonNode.class);
+        return ResponseEntity.ok(in);
+    }
 
 	@PutMapping
 	public ResponseEntity<JsonNode> putTransmitter(@RequestBody JsonNode transmitter) {
