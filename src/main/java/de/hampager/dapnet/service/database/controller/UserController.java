@@ -146,6 +146,20 @@ public class UserController extends AbstractController {
 				.body(db.getBody());
 	}
 
+	// Abitrary users avatar image if list permission is given
+	@GetMapping("avatar/{username}.jpg")
+	public ResponseEntity<byte[]> getAnyUsersAvatar(@PathVariable String username) {
+		/*
+		 * // Read only own picture final PermissionValue permission =
+		 * requirePermission(USER_READ); final AppUser user = getCurrentUser();
+		 */
+		requirePermission(USER_LIST, PermissionValue.ALL);
+
+		ResponseEntity<byte[]> db = performGetAvatar(username);
+		return ResponseEntity.status(db.getStatusCode()).contentType(db.getHeaders().getContentType())
+				.body(db.getBody());
+	}
+
 	@PutMapping
 	public ResponseEntity<JsonNode> putUser(@RequestBody JsonNode user) {
 		if (user.has("_rev")) {
