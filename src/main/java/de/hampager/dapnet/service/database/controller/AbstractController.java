@@ -232,7 +232,7 @@ public abstract class AbstractController {
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 		final HttpEntity<JsonNode> request = new HttpEntity<>(null, headers);
-		final String path = paramPath.concat("?rev={revision}");
+		final String path = avatarPath.concat("?rev={revision}");
 		return restTemplate.exchange(path, HttpMethod.DELETE, request, JsonNode.class, pathParam, revision);
 	}
 
