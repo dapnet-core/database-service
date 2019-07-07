@@ -91,6 +91,9 @@ class RubricController extends AbstractController {
 		return ResponseEntity.ok(in);
 	}
 
+/*
+--------- NOT IMPLEMENTED in CouchDB an until now no reason for this ------------
+
 	@GetMapping("_descriptions")
 	public ResponseEntity<JsonNode> getDescription() {
 		requirePermission(RUBRIC_LIST);
@@ -114,6 +117,7 @@ class RubricController extends AbstractController {
 		JsonNode in = restTemplate.getForObject(fullMetaPath, JsonNode.class);
 		return ResponseEntity.ok(in);
 	}
+*/
 
 	@GetMapping("_view/byNumber")
 	public ResponseEntity<JsonNode> getbyNumber(@RequestParam Map<String, String> params) {
@@ -133,6 +137,79 @@ class RubricController extends AbstractController {
 		return ResponseEntity.ok(out);
 	}
 
+	@GetMapping("_view/byLabel")
+    public ResponseEntity<JsonNode> getbyLabel(@RequestParam Map<String, String> params) {
+        requirePermission(RUBRIC_READ);
+
+        URI path = buildViewPath("byLabel", params);
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        out.put("total_rows", in.get("total_rows").asInt());
+        ArrayNode rows = out.putArray("rows");
+        for (JsonNode n : in.get("rows")) {
+            JsonNode doc = n.get("doc");
+            rows.add(doc);
+        }
+
+        return ResponseEntity.ok(out);
+    }
+
+    @GetMapping("_view/byDescription")
+    public ResponseEntity<JsonNode> getbyDescription(@RequestParam Map<String, String> params) {
+        requirePermission(RUBRIC_READ);
+
+        URI path = buildViewPath("byDescription", params);
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        out.put("total_rows", in.get("total_rows").asInt());
+        ArrayNode rows = out.putArray("rows");
+        for (JsonNode n : in.get("rows")) {
+            JsonNode doc = n.get("doc");
+            rows.add(doc);
+        }
+
+        return ResponseEntity.ok(out);
+    }
+    @GetMapping("_view/byFunction")
+    public ResponseEntity<JsonNode> getbyFunction(@RequestParam Map<String, String> params) {
+        requirePermission(RUBRIC_READ);
+
+        URI path = buildViewPath("byFunction", params);
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        out.put("total_rows", in.get("total_rows").asInt());
+        ArrayNode rows = out.putArray("rows");
+        for (JsonNode n : in.get("rows")) {
+            JsonNode doc = n.get("doc");
+            rows.add(doc);
+        }
+
+        return ResponseEntity.ok(out);
+    }
+
+    @GetMapping("_view/byCyclicTransmit")
+    public ResponseEntity<JsonNode> getbyCyclicTransmit(@RequestParam Map<String, String> params) {
+        requirePermission(RUBRIC_READ);
+
+        URI path = buildViewPath("byCyclicTransmit", params);
+        JsonNode in = restTemplate.getForObject(path, JsonNode.class);
+        ObjectNode out = mapper.createObjectNode();
+
+        out.put("total_rows", in.get("total_rows").asInt());
+        ArrayNode rows = out.putArray("rows");
+        for (JsonNode n : in.get("rows")) {
+            JsonNode doc = n.get("doc");
+            rows.add(doc);
+        }
+
+        return ResponseEntity.ok(out);
+    }
+
+/*
+--------- NOT IMPLEMENTED in CouchDB an until now no reason for this ------------
 	@GetMapping("_view/byTransmitter")
 	public ResponseEntity<JsonNode> getbyTransmitter(@RequestParam Map<String, String> params) {
 		requirePermission(RUBRIC_READ);
@@ -168,6 +245,7 @@ class RubricController extends AbstractController {
 
 		return ResponseEntity.ok(out);
 	}
+*/
 
 	@GetMapping("{rubricname}")
 	public ResponseEntity<JsonNode> getRubric(@PathVariable String rubricname) {
