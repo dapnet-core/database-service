@@ -95,14 +95,20 @@ public abstract class AbstractController {
 		if (requestParams.containsKey("startswith")) {
 			String value = requestParams.remove("startswith");
 			if (value != null) {
-				if (requestParams.containsKey("descending")
-						&& requestParams.get("descending").equalsIgnoreCase("true")) {
-					requestParams.put("endkey", value);
-					requestParams.put("startkey", String.format("\"%s\\ufff0\"", value.replaceAll("\"", "")));
-				} else {
-					requestParams.put("startkey", value);
-					requestParams.put("endkey", String.format("\"%s\\ufff0\"", value.replaceAll("\"", "")));
-				}
+			    if (requestParams.containsKey("numeric")
+                        && requestParams.get("numeric").equalsIgnoreCase("true")) {
+                    requestParams.put("startkey", value);
+                    requestParams.put("endkey", value);
+                } else {
+                    if (requestParams.containsKey("descending")
+                            && requestParams.get("descending").equalsIgnoreCase("true")) {
+                        requestParams.put("endkey", value);
+                        requestParams.put("startkey", String.format("\"%s\\ufff0\"", value.replaceAll("\"", "")));
+                    } else {
+                        requestParams.put("startkey", value);
+                        requestParams.put("endkey", String.format("\"%s\\ufff0\"", value.replaceAll("\"", "")));
+                    }
+                }
 			}
 		}
 
