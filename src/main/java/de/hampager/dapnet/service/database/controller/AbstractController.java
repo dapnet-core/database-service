@@ -94,7 +94,7 @@ public abstract class AbstractController {
 		// syntax of start and endkey
 		if (requestParams.containsKey("startswith")) {
 			String value = requestParams.remove("startswith");
-			if (value != null) {
+			if (value != null || value.length() != 0) {
 			    if (requestParams.containsKey("numeric")
                         && requestParams.get("numeric").equalsIgnoreCase("true")) {
                     requestParams.put("startkey", value);
