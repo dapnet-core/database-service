@@ -95,10 +95,12 @@ public abstract class AbstractController {
 		if (requestParams.containsKey("startswith")) {
 			String value = requestParams.remove("startswith");
 			if (value != null || value.length() != 0) {
-			    if (requestParams.containsKey("numeric")
-                        && requestParams.get("numeric").equalsIgnoreCase("true")) {
-                    requestParams.put("startkey", value);
-                    requestParams.put("endkey", value);
+			    if (requestParams.containsKey("numeric")) {
+                    String numericValue = requestParams.remove("numeric");
+                    if (numericValue.equalsIgnoreCase("true")) {
+                        requestParams.put("startkey", value);
+                        requestParams.put("endkey", value);
+                    }
                 } else {
                     if (requestParams.containsKey("descending")
                             && requestParams.get("descending").equalsIgnoreCase("true")) {
