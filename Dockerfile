@@ -2,7 +2,7 @@ FROM maven:3-jdk-10-slim as build
 
 COPY . /build/
 WORKDIR /build
-RUN mvn package -q
+RUN mvn package -q -DskipTests
 
 FROM openjdk:10-slim
 COPY --from=build /build/target/*.jar /app/
